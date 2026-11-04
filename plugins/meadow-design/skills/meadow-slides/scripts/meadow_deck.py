@@ -20,7 +20,7 @@ import sys
 import tempfile
 from dataclasses import dataclass, field
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import ImageChops, Image, ImageDraw, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -692,14 +692,17 @@ def prep_image(p: Prim, tmpdir, scale=1.0):
         d = ImageDraw.Draw(ov)
         base = (14, 16, 19)
         if sc == "left":       # dark behind the copy on the left, image breathes on the right
+            side, floor = Image.new("L", (bw, bh), 0), Image.new("L", (bw, bh), 0)
+            ds, df = ImageDraw.Draw(side), ImageDraw.Draw(floor)
             for x in range(bw):
                 t = x / bw
-                a = 240 if t < 0.32 else max(0, int(240 * (1 - (t - 0.32) / 0.43)))
-                d.line([(x, 0), (x, bh)], fill=(*base, a))
+                ds.line([(x, 0), (x, bh)], fill=240 if t < 0.32 else max(0, int(240 * (1 - (t - 0.32) / 0.43))))
             for y in range(bh):  # and a floor so footer/stats stay readable
                 t = y / bh
                 if t > 0.7:
-                    d.line([(0, y), (bw, y)], fill=(*base, int(200 * (t - 0.7) / 0.3)))
+                    df.line([(0, y), (bw, y)], fill=int(200 * (t - 0.7) / 0.3))
+            ov = Image.new("RGBA", (bw, bh), (*base, 0))
+            ov.putalpha(ImageChops.lighter(side, floor))  # max of the two, so the floor never lightens the side
         elif sc == "fade-left":
             for x in range(bw):
                 t = x / bw
@@ -843,6 +846,15 @@ def _rgba(hexc):
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4)) + ((int(h[6:8], 16),) if len(h) == 8 else (255,))
 
 
+def write_pdf(slides, path):
+    """Full-resolution Pillow render of every slide, saved as one PDF."""
+    tmp = tempfile.mkdtemp(prefix="meadow_pdf_")
+    render_png(slides, tmp, scale=1.0)
+    pages = [Image.open(os.path.join(tmp, f)).convert("RGB")
+             for f in sorted(os.listdir(tmp)) if f.startswith("slide-")]
+    pages[0].save(path, save_all=True, append_images=pages[1:], resolution=144)
+
+
 def render_png(slides, outdir, scale=0.5):
     """Draw the computed layout with Pillow. Approximates text metrics (no tracking),
     but needs no office app, so it works in any sandbox."""
@@ -939,6 +951,7 @@ def main():
     ap.add_argument("--portable", action="store_true", help="Regular/Bold only, for Google Slides or machines without the fonts")
     ap.add_argument("--embed-notes", action="store_true", help="put speaker notes into the PPTX (PowerPoint only: Keynote refuses to open such files)")
     ap.add_argument("--png", metavar="DIR", help="also draw every slide to PNG with Pillow (no Keynote/LibreOffice needed)")
+    ap.add_argument("--pdf", metavar="FILE", help="also write a PDF (Pillow render at full 1920x1080; text is not selectable)")
     ap.add_argument("--list-layouts", action="store_true")
     a = ap.parse_args()
     if a.list_layouts:
@@ -960,6 +973,9 @@ def main():
     if a.png:
         sheet = render_png(slides, a.png)
         print(f"wrote {a.png}/ (contact sheet: {sheet})")
+    if a.pdf:
+        write_pdf(slides, a.pdf)
+        print(f"wrote {a.pdf}")
     if a.figma_json:
         write_figma_json(slides, a.figma_json, title=deck.get("title", ""))
         print(f"wrote {a.figma_json}")

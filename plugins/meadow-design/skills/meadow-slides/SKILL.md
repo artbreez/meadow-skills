@@ -97,6 +97,8 @@ the returned files into the spec by path.
 - Speaker notes: add `"notes"` to any slide. They go to `deck-notes.md` next to the PPTX,
   because Keynote refuses to open a PPTX that has notes slides written by python-pptx.
   `--embed-notes` puts them inside, for decks that will only be opened in PowerPoint.
+- **PDF**: add `--pdf deck.pdf` (full 1920×1080 render of every slide, text not selectable).
+  Use it when someone asks for a PDF to send or read; no Keynote or LibreOffice needed.
 
 ## When the layouts don't fit
 

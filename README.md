@@ -1,11 +1,15 @@
 # Meadow skills
 
+<img src="docs/cover.png" alt="Meadow Slides — a deck built by the skill" width="100%">
+
 Brand skills for Claude, shared across the team. They work in **Claude Code** and in
 **Claude Design / claude.ai**.
 
 | skill | what it does |
 |---|---|
 | `meadow-slides` | Builds decks in the Meadow design system: `.pptx` (and editable Figma frames on request), plus image prompts for covers and backgrounds. Russian and English. |
+
+<img src="docs/preview.png" alt="Six slides from a deck the skill built" width="100%">
 
 Just ask in plain words, e.g. *«сделай презу на 6 слайдов про контент-завод для клиента»*,
 *"turn this brief into a Meadow deck"*, *«промпты для обложки в стиле Meadow»*.
@@ -17,15 +21,14 @@ Just ask in plain words, e.g. *«сделай презу на 6 слайдов �
 /plugin install meadow-design@meadow
 ```
 
-Updates: `/plugin marketplace update meadow`. The repo is private, so you need read access
-on GitHub and `gh auth login` (or SSH keys) on your machine.
+Updates: `/plugin marketplace update meadow`. The repo is public, so no GitHub access
+or `gh auth` is needed.
 
 Fonts, once per machine (needed to open and edit the decks as designed):
 `~/.claude/plugins/…/meadow-slides/scripts/install_fonts.sh`, or install the files in
 `plugins/meadow-design/skills/meadow-slides/assets/fonts/` by hand (Geist, Geist Mono, Syne — OFL).
 
-To preview slides as images, the skill uses LibreOffice (`brew install --cask libreoffice`)
-or Keynote on macOS.
+Previews and PDFs are drawn by the script itself (`--png`, `--pdf`), no office app needed.
 
 ## Install: Claude Design / claude.ai
 

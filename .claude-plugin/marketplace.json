@@ -1,0 +1,13 @@
+{
+  "name": "meadow",
+  "owner": { "name": "Meadow design team" },
+  "metadata": { "description": "Meadow brand skills for Claude Code and Claude Design" },
+  "plugins": [
+    {
+      "name": "meadow-design",
+      "source": "./plugins/meadow-design",
+      "description": "Meadow brand skills: decks in the Meadow design system (PPTX + optional Figma) with image prompts.",
+      "version": "0.1.0"
+    }
+  ]
+}

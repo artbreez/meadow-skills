@@ -38,8 +38,16 @@ examples/sample-deck.json      a six-slide deck covering the main layouts (ficti
    are bundled short names (`wave-05`, `meadow-night-02`, `people-02-camera-blue`) or paths.
 5. **Build:** `python3 scripts/meadow_deck.py deck.json -o deck.pptx`.
    Treat every `WARN` as a bug: shorten copy, split the slide, or switch layout, then rebuild.
-   `WARN` lines cover overflowing text, Cyrillic set in Syne (no Cyrillic glyphs), and more than one
-   accent plate on a slide.
+   `WARN` lines cover overflowing text, Cyrillic set in Syne (no Cyrillic glyphs), more than one
+   accent plate on a slide, and the **alignment gate**, which runs on every build:
+   - text not optically centred in a pill, chip, button or badge (ink padding left/right and
+     cap height top/bottom must match within 1.5px);
+   - content crossing the 96px side margins (images that bleed off the slide are fine);
+   - edges that almost line up, 1–4px apart: snap them or move them clearly apart;
+   - uneven gaps in a row or stack of same-size cards.
+   Any new pill-shaped element goes through `Slide.pill()`, which sizes and centres it; text that
+   follows other text inline (an icon after a number, a unit, a badge) is built with `flow=True`
+   so it is checked for fit but not held to the grid.
 6. **Look at it.** Fastest, and works everywhere: add `--png preview/` to the build. It draws
    the same layout with Pillow (exact geometry, approximate text). For a real office render, run
    `python3 scripts/preview.py deck.pptx` (LibreOffice, or Keynote on macOS). Open

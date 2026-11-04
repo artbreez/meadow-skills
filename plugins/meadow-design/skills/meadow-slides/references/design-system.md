@@ -53,6 +53,9 @@ Latin-only → Syne, even in a Russian deck; any Cyrillic → Geist. Syne digits
 - Gaps 24 between cards, 12 between rows, 16 between tiles on a plate.
 - Radii: card 24, row 16, tile 20, plate 24–32, pills fully round.
 - Card padding 40, plate padding 24 (tiles) or 40 (content).
+- Alignment: edges either meet exactly or sit clearly apart; never 1–4px off. Text in a pill is
+  centred on its ink: equal side padding, cap height centred (not the line box, which carries
+  descender space and makes capitals sit low). The build checks all of this.
 
 ## Components
 

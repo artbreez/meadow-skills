@@ -89,6 +89,31 @@ def font(family, weight, size):
     return _font_cache[key]
 
 
+_vm_cache = {}
+
+
+def vmetrics(family, weight):
+    """(ascender, descender, cap height) in em, from the bundled font."""
+    k = (family, weight)
+    if k not in _vm_cache:
+        f = font(family, weight, 1000)
+        a, d = f.getmetrics()
+        _vm_cache[k] = (a / 1000, d / 1000, -f.getbbox("H", anchor="ls")[1] / 1000)
+    return _vm_cache[k]
+
+
+def ink_x(text, family, weight, size, tracking=0.0):
+    """Left/right ink edges of one line drawn from x=0, letter-spacing included."""
+    f = font(family, weight, size * 4)                      # 4x for sub-pixel precision
+    bb = f.getbbox(text or " ", anchor="ls")
+    return bb[0] / 4, bb[2] / 4 + tracking * size * max(0, len(text) - 1)
+
+
+def line_width(text, family, weight, size, tracking=0.0):
+    """Advance width of one line as the renderers lay it out (unhinted, like Keynote)."""
+    return font(family, weight, size * 4).getlength(text) / 4 + tracking * size * max(0, len(text) - 1)
+
+
 # ---------------------------------------------------------------- typography helpers
 CYR = re.compile(r"[А-Яа-яЁё]")
 SHORT_RU = {
@@ -115,6 +140,17 @@ def typograph(text: str) -> str:
     return text
 
 
+_hi_cache = {}
+
+
+def _adv(f, text):
+    """Unhinted advance width (measured at 4x), the way Keynote and PowerPoint lay text out."""
+    k = (f.path, f.size)
+    if k not in _hi_cache:
+        _hi_cache[k] = f.font_variant(size=f.size * 4)
+    return _hi_cache[k].getlength(text) / 4
+
+
 def wrap(text, f, width):
     """Greedy word wrap; NBSP-joined words never split. Returns lines."""
     lines = []
@@ -123,7 +159,7 @@ def wrap(text, f, width):
         cur = ""
         for w_ in words:
             trial = w_ if not cur else cur + " " + w_
-            if f.getlength(trial) <= width or not cur:
+            if _adv(f, trial) <= width or not cur:
                 cur = trial
             else:
                 lines.append(cur)
@@ -152,17 +188,39 @@ class Slide:
         self.warnings: list[str] = []
         self.accents = 0
 
-    def rect(self, x, y, w, h, fill, radius=0, stroke=None, name="", link=None):
-        self.prims.append(Prim("rect", x, y, w, h, {"fill": fill, "radius": radius, "stroke": stroke, "link": link}, name))
+    def rect(self, x, y, w, h, fill, radius=0, stroke=None, name="", link=None, flow=False):
+        self.prims.append(Prim("rect", x, y, w, h, {"fill": fill, "radius": radius, "stroke": stroke, "link": link, "flow": flow}, name))
+
+    def pill(self, x, y, h, text, *, fill, color, family="Geist", weight=500, size=26, pad=24,
+             tracking=0.0, caps=False, stroke=None, link=None, name="Pill", typo=True, flow=False):
+        """Rounded pill sized to its text, with the text optically centred: equal ink padding
+        left/right, cap height centred top/bottom. The line box is the font's natural height,
+        anchored middle, so Keynote, PowerPoint and the Pillow render agree. Returns width."""
+        t = str(text)
+        t = t.upper() if caps else t
+        t = typograph(t) if typo else t
+        l, r = ink_x(t, family, weight, size, tracking)
+        w = (r - l) + 2 * pad
+        self.rect(x, y, w, h, fill, h / 2, stroke=stroke, name=name, link=link)
+        self.prims[-1].props.update(pill=True, flow=flow)
+        a, d, cap = vmetrics(family, weight)
+        L = size * (a + d)
+        baseline = y + h / 2 + cap * size / 2                  # caps centred on the pill
+        by = baseline - a * size - (h - L) / 2                # box whose middle-anchored line lands there
+        self.text(x + pad - l, by, line_width(t, family, weight, size, tracking) + 40, t, family=family,
+                  weight=weight, size=size, color=color, lh=a + d, tracking=tracking, typo=False,
+                  valign="middle", h=h, link=link, name=name + " label", flow=flow)
+        return w
 
     def ellipse(self, x, y, d, fill, name=""):
         self.prims.append(Prim("ellipse", x, y, d, d, {"fill": fill}, name))
 
-    def image(self, path, x, y, w, h, radius=0, name="", scrim=None, fit="cover"):
-        self.prims.append(Prim("image", x, y, w, h, {"src": path, "radius": radius, "scrim": scrim, "fit": fit}, name))
+    def image(self, path, x, y, w, h, radius=0, name="", scrim=None, fit="cover", flow=False):
+        self.prims.append(Prim("image", x, y, w, h, {"src": path, "radius": radius, "scrim": scrim, "fit": fit, "flow": flow}, name))
 
     def text(self, x, y, w, text, *, family="Geist", weight=400, size=28, color=C["white"], lh=1.3,
-             align="left", tracking=0.0, caps=False, max_h=None, name="", typo=True, valign="top", h=None, link=None):
+             align="left", tracking=0.0, caps=False, max_h=None, name="", typo=True, valign="top", h=None, link=None,
+             flow=False):
         """Place a text block, return its measured height."""
         if text is None:
             return 0
@@ -181,7 +239,7 @@ class Slide:
             self.warnings.append(f"slide {self.index}: Syne has no Cyrillic, use Geist for {text[:40]!r}")
         self.prims.append(Prim("text", x, y, w, bh, {
             "text": text, "family": family, "weight": weight, "size": size, "color": color, "lh": lh,
-            "align": align, "tracking": tracking, "valign": valign, "lines": len(lines), "link": link}, name))
+            "align": align, "tracking": tracking, "valign": valign, "lines": len(lines), "link": link, "flow": flow}, name))
         return mh
 
     def measure(self, text, w, *, family="Geist", weight=400, size=28, lh=1.3, caps=False):
@@ -336,11 +394,8 @@ def layout_cover(spec, ctx, s: Slide):
     logo(s, M, 96, 280)
     y = 300
     if spec.get("chip"):
-        f = font("Geist Mono", 500, 20)
-        chip = typograph(spec["chip"].upper())
-        cw = f.getlength(chip) + 0.04 * 20 * (len(chip) - 1) + 48   # text + tracking + 24px each side
-        s.rect(M, y, cw, 44, C["lime"], 22, name="Chip")
-        s.text(M + 24, y + 11, cw - 24, spec["chip"], family="Geist Mono", weight=500, size=20, color=C["ink"], lh=1.1, caps=True, tracking=0.04)
+        s.pill(M, y, 44, spec["chip"], fill=C["lime"], color=C["ink"], family="Geist Mono", weight=500,
+               size=20, pad=24, tracking=0.04, caps=True, name="Chip")
         y += 44 + 32
     th = s.text(M, y, 1300, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", ""), 700, 800),
                 size=spec.get("title_size", 160), lh=1.0, tracking=-0.03, max_h=340, name="Title")
@@ -352,7 +407,7 @@ def layout_cover(spec, ctx, s: Slide):
         sx = M
         sw = min(440, (W - 2 * M) / len(stats))
         for st in stats:
-            vw = font("Syne", 700, 48).getlength(str(st["value"]))
+            vw = line_width(str(st["value"]), "Syne", 700, 48)
             s.text(sx, 900, sw, str(st["value"]), family="Syne", weight=700, size=48, color=C["lime"], lh=1.0, typo=False)
             ix = sx + vw + 20
             for ic in st.get("icons", []):
@@ -387,13 +442,17 @@ def layout_text_cards(spec, ctx, s: Slide):
     """Slide 02 of the content-factory deck: 1–2 text columns on top, 1–3 cards below."""
     y = header(s, ctx, spec)
     cols = spec.get("columns", [])
-    if cols:
-        cw = (W - 2 * M - 96 * (len(cols) - 1)) / len(cols)
-        hmax = 0
-        for i, para in enumerate(cols):
-            hmax = max(hmax, s.text(M + i * (cw + 96), y, cw, para, size=28, color=C["text2"], lh=1.45))
-        y += hmax + 56
     cards = spec.get("cards", [])
+    if cols:
+        if len(cards) == len(cols):   # columns start on the card edges below them
+            boxes = [(bx, bw - 56) for bx, _, bw, _ in grid(len(cols), len(cols), M, 0, W - 2 * M, 1)]
+        else:
+            cw = (W - 2 * M - 96 * (len(cols) - 1)) / len(cols)
+            boxes = [(M + i * (cw + 96), cw) for i in range(len(cols))]
+        hmax = 0
+        for (cx, cw), para in zip(boxes, cols):
+            hmax = max(hmax, s.text(cx, y, cw, para, size=28, color=C["text2"], lh=1.45))
+        y += hmax + 56
     if cards:
         for box, c in zip(grid(len(cards), len(cards), M, y, W - 2 * M, CONTENT_BOTTOM - y), cards):
             card(s, *box, c)
@@ -449,9 +508,9 @@ def kpi_tile(s, x, y, w, h, t, dark_on_lime=True):
     vs = t.get("size") or (64 if h >= 180 else 44)
     vy = y + 28 + 19 + (24 if h >= 180 else 14)
     vw = s.text(x + 28, vy, w - 56, str(t.get("value", "")), family="Syne", weight=700, size=vs, color=C["lime"], lh=1.0, typo=False)
-    ix = x + 28 + font("Syne", 700, vs).getlength(str(t.get("value", ""))) + 16
+    ix = x + 28 + line_width(str(t.get("value", "")), "Syne", 700, vs) + 16
     for ic in t.get("icons", []):
-        s.image(asset(ic, "icons"), ix, vy + vs * 0.3, vs * 0.42, vs * 0.42, fit="contain")
+        s.image(asset(ic, "icons"), ix, vy + vs * 0.3, vs * 0.42, vs * 0.42, fit="contain", flow=True)
         ix += vs * 0.42 + 12
     if t.get("caption") and h >= 140:
         s.text(x + 28, vy + vs + 14, w - 56, t["caption"], size=22, color=C["text2"], lh=1.3)
@@ -481,6 +540,12 @@ def layout_kpi(spec, ctx, s: Slide):
     if steps:
         sy = CONTENT_BOTTOM - 208
         lw = 300 if spec.get("steps_title") else 0
+        tile_edges = [e for p in s.prims if p.kind == "rect" and p.y < sy for e in (p.x, p.x + p.w)]
+        for d_ in (0, -8, 8, -16, 16, -24, 24):   # edges either meet exactly or sit clearly apart
+            xs = [e for b_ in grid(len(steps), len(steps), M + lw + d_, sy, W - 2 * M - lw - d_, 208) for e in (b_[0], b_[0] + b_[2])]
+            if not any(0.5 < abs(a_ - b_) <= 6 for a_ in xs for b_ in tile_edges):
+                lw += d_
+                break
         if lw:
             s.text(M, sy + 20, lw - 24, spec["steps_title"], weight=600, size=40, lh=1.15)
             if spec.get("steps_text"):
@@ -528,17 +593,15 @@ def layout_case(spec, ctx, s: Slide):
     vy = y + 84
     vs = 120
     s.text(px, vy, rw - 80, str(r.get("value", "")), family="Syne", weight=700, size=vs, color=C["ink"], lh=1.0, typo=False)
-    vw = font("Syne", 700, vs).getlength(str(r.get("value", "")))
+    vw = line_width(str(r.get("value", "")), "Syne", 700, vs)
     if r.get("unit"):
-        s.text(px + vw + 20, vy + vs - 60, rw - 120 - vw, r["unit"], family=ctx.head_family(r["unit"]), weight=700, size=52, color=C["ink"], lh=1.0)
+        s.text(px + vw + 20, vy + vs - 60, rw - 120 - vw, r["unit"], family=ctx.head_family(r["unit"]), weight=700, size=52, color=C["ink"], lh=1.0, flow=True)
     cy = vy + vs + 16
     if r.get("caption"):
         s.text(px, cy, 300, r["caption"], size=24, color=C["ink"], lh=1.3)
-        cwid = font("Geist", 400, 24).getlength(typograph(r["caption"]))
+        cwid = line_width(typograph(r["caption"]), "Geist", 400, 24)
         if r.get("badge"):
-            bw = font("Geist", 500, 18).getlength(r["badge"]) + 32
-            s.rect(px + cwid + 16, cy - 4, bw, 36, C["ink"], 18)
-            s.text(px + cwid + 32, cy + 4, bw - 24, r["badge"], weight=500, size=18, color=C["lime"], lh=1.1)
+            s.pill(px + cwid + 16, cy - 4, 36, r["badge"], fill=C["ink"], color=C["lime"], size=18, pad=16, name="Badge", flow=True)
     tiles = r.get("tiles", [])
     tiles_h = 112 if tiles else 0
     ty = CONTENT_BOTTOM - 40 - tiles_h
@@ -650,13 +713,109 @@ def layout_contacts(spec, ctx, s: Slide):
     for i, b in enumerate(spec.get("buttons", [])):
         primary = b.get("primary", i == 0)
         label = b["label"] + ("  ↗" if b.get("url") else "")
-        bw = font("Geist", 500, 26).getlength(label) + 72
-        s.rect(x, y, bw, 72, C["lime"] if primary else "#FFFFFF1F", 36, stroke=None if primary else "#FFFFFF33", link=b.get("url"))
-        s.text(x + 36, y + 20, bw - 60, label, weight=500, size=26, color=C["ink"] if primary else C["white"], lh=1.2, typo=False, link=b.get("url"))
+        bw = s.pill(x, y, 72, label, fill=C["lime"] if primary else "#FFFFFF1F", color=C["ink"] if primary else C["white"],
+                    size=26, pad=36, stroke=None if primary else "#FFFFFF33", link=b.get("url"), typo=False, name="Button")
         x += bw + 20
 
 
 LAYOUTS = {k[7:].replace("_", "-"): v for k, v in globals().items() if k.startswith("layout_")}
+
+
+# ---------------------------------------------------------------- alignment gate
+def _text_lines(t):
+    pr = t.props
+    return wrap(pr["text"], font(pr["family"], pr["weight"], pr["size"]), t.w)
+
+
+def _ink_box(t):
+    """Ink box of a text primitive: x from the glyphs, y from baseline to cap height
+    (the optical box designers centre). Same model as the renderers."""
+    pr = t.props
+    a, d, cap = vmetrics(pr["family"], pr["weight"])
+    L = pr["size"] * pr["lh"]
+    lines = _text_lines(t)
+    if pr.get("valign") == "middle":
+        top = t.y + (t.h - len(lines) * L) / 2
+        first = top + L * a / (a + d)
+    else:
+        first = t.y + (L - pr["size"]) / 2 + a * pr["size"]
+    xs = []
+    for line in lines:
+        lw_ = line_width(line, pr["family"], pr["weight"], pr["size"], pr["tracking"])
+        off = {"left": 0, "center": (t.w - lw_) / 2, "right": t.w - lw_}[pr["align"]]
+        l, r = ink_x(line, pr["family"], pr["weight"], pr["size"], pr["tracking"])
+        xs.append((t.x + off + l, t.x + off + r))
+    return (min(x[0] for x in xs), first - cap * pr["size"],
+            max(x[1] for x in xs), first + (len(lines) - 1) * L)
+
+
+def check_alignment(s: Slide, tol=1.5, near=4):
+    """Layout lint, run on every build. Adds WARN lines for:
+    - text not optically centred in a pill / chip / button / badge,
+    - content outside the 96px side margins (bleeding images are fine),
+    - edges that almost line up (off by 1-4px): a near miss is always a bug,
+    - same-size cards in a row or a stack with uneven gaps."""
+    out = s.warnings.append
+    rects = [p for p in s.prims if p.kind in ("rect", "image")]
+    texts = [p for p in s.prims if p.kind == "text" and p.props["text"].strip()]
+    bleed = lambda p: p.x <= 0.5 or p.y <= 0.5 or p.x + p.w >= W - 0.5 or p.y + p.h >= H - 0.5
+
+    # 1. pills: anything fully rounded and short, holding one single-line text
+    for r in rects:
+        if r.kind != "rect" or r.h > 96 or r.props.get("radius", 0) < r.h / 2 - 1:
+            continue
+        inside = [t for t in texts if r.x - 1 <= t.x <= r.x + r.w and r.y - 8 <= t.y + t.props["size"] / 2 <= r.y + r.h + 8]
+        if len(inside) != 1 or len(_text_lines(inside[0])) != 1:
+            continue
+        il, it, ir, ib = _ink_box(inside[0])
+        dl, dr, dt, db = il - r.x, r.x + r.w - ir, it - r.y, r.y + r.h - ib
+        if abs(dl - dr) > tol or abs(dt - db) > tol:
+            out(f"slide {s.index}: text off-centre in a pill ({inside[0].props['text'][:30]!r}): "
+                f"left {dl:.1f} / right {dr:.1f}, top {dt:.1f} / bottom {db:.1f}px; build it with Slide.pill()")
+
+    # 2. side margins
+    for p in rects + texts:
+        if p.kind == "image" and bleed(p) or p.kind == "rect" and p.w >= W - 1:
+            continue
+        l, _, r, _ = _ink_box(p) if p.kind == "text" else (p.x, 0, p.x + p.w, 0)
+        if l < M - tol or r > W - M + tol:
+            what = p.props["text"][:30] if p.kind == "text" else (p.name or p.kind)
+            out(f"slide {s.index}: {what!r} crosses the {M}px side margin ({l:.0f}..{r:.0f})")
+
+    # 3. near-miss edges
+    boxes = [p for p in rects if not bleed(p) and not p.props.get("flow")]
+    label = lambda p: (p.props["text"][:24] if p.kind == "text" else (p.name or p.kind))
+    edges = {
+        "left": [(p.x, p) for p in boxes] + [(t.x, t) for t in texts if t.props["align"] == "left" and not t.props.get("flow")],
+        "right": [(p.x + p.w, p) for p in boxes],
+        "top": [(p.y, p) for p in boxes],
+        "bottom": [(p.y + p.h, p) for p in boxes],
+    }
+    for side, vals in edges.items():
+        by = {}
+        for v, p in vals:
+            by.setdefault(round(v, 1), p)
+        keys = sorted(by)
+        for a_, b_ in zip(keys, keys[1:]):
+            if 0.5 < b_ - a_ <= near:
+                out(f"slide {s.index}: {side} edges almost line up: {label(by[a_])!r} at {a_:g} vs "
+                    f"{label(by[b_])!r} at {b_:g}px; snap them")
+
+    # 4. rows and stacks of same-size boxes: equal gaps
+    cards = [p for p in boxes if p.kind == "rect" and p.props.get("radius", 0) >= R_ROW and not p.props.get("pill")]
+    for key, axis in (((lambda p: (round(p.y), round(p.h), round(p.w))), "x"), ((lambda p: (round(p.x), round(p.w), round(p.h))), "y")):
+        groups = {}
+        for p in cards:
+            groups.setdefault(key(p), []).append(p)
+        for g in groups.values():
+            if len(g) < 3:
+                continue
+            g.sort(key=lambda p: getattr(p, axis))
+            size = "w" if axis == "x" else "h"
+            gaps = [getattr(b_, axis) - getattr(a_, axis) - getattr(a_, size) for a_, b_ in zip(g, g[1:])]
+            if max(gaps) - min(gaps) > tol:
+                out(f"slide {s.index}: uneven gaps in a {'row' if axis == 'x' else 'stack'} of {len(g)} boxes: "
+                    + ", ".join(f"{v:.0f}" for v in gaps) + "px")
 
 
 def build(deck):
@@ -670,6 +829,7 @@ def build(deck):
         LAYOUTS[name](spec, ctx, s)
         s.notes = spec.get("notes", "")
         s.name = spec.get("name") or f"{i:02d} — {spec.get('title', name)}".replace("\n", " ")[:80]
+        check_alignment(s)
         if s.accents > 1:
             s.warnings.append(f"slide {i}: {s.accents} accent plates; Meadow slides carry at most one")
         slides.append(s)
@@ -903,15 +1063,23 @@ def render_png(slides, outdir, scale=0.5):
                 lh = pr["size"] * pr["lh"] * scale
                 y = p.y * scale
                 tr = pr.get("tracking", 0) * pr["size"] * scale   # letter-spacing in px, as in the PPTX
-                for line in wrap(pr["text"], font(pr["family"], pr["weight"], pr["size"]), p.w):
-                    lw_ = f.getlength(line) + tr * max(0, len(line) - 1)
+                lines = wrap(pr["text"], font(pr["family"], pr["weight"], pr["size"]), p.w)
+                asc, desc, _ = vmetrics(pr["family"], pr["weight"])
+                if pr.get("valign") == "middle":
+                    y = (p.y + (p.h - len(lines) * pr["size"] * pr["lh"]) / 2) * scale
+                hi = font(pr["family"], pr["weight"], pr["size"] * scale * 4)   # unhinted advances, like Keynote
+                adv = lambda t_: hi.getlength(t_) / 4
+                for line in lines:
+                    lw_ = adv(line) + tr * max(0, len(line) - 1)
                     x = p.x * scale + {"left": 0, "center": (p.w * scale - lw_) / 2, "right": p.w * scale - lw_}[pr["align"]]
-                    ty = y + (lh - pr["size"] * scale) / 2
-                    if tr:   # draw glyph by glyph; prefix widths keep the font's kerning
-                        for i, ch in enumerate(line):
-                            d.text((x + f.getlength(line[:i]) + tr * i, ty), ch, font=f, fill=_rgba(pr["color"]))
+                    if pr.get("valign") == "middle":
+                        pos, anchor = (y + lh * asc / (asc + desc)), "ls"
                     else:
-                        d.text((x, ty), line, font=f, fill=_rgba(pr["color"]))
+                        pos, anchor = y + (lh - pr["size"] * scale) / 2, "la"
+                    # glyph by glyph at exact positions: prefix widths keep kerning, tracking is added
+                    for i, ch in enumerate(line):
+                        if ch.strip():
+                            d.text((x + adv(line[:i]) + tr * i, pos), ch, font=f, fill=_rgba(pr["color"]), anchor=anchor)
                     y += lh
         path = os.path.join(outdir, f"slide-{s.index:02d}.png")
         im.convert("RGB").save(path)

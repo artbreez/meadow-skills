@@ -60,10 +60,11 @@ mostly when you write copy or bend a layout.
   Lime #D3FF31 marks the *one* thing the slide is about (the offer, the result, the key
   callout). Two lime plates on a slide flatten the hierarchy. Don't paint a random card lime
   just to have an accent: a slide can have none. Text on lime is near-black, never white.
-- **Fonts.** Syne has no Cyrillic, so in Russian decks headings and body are set in **Geist**,
-  labels in **Geist Mono** caps, and only standalone numbers/KPIs in **Syne** (from ~36px). In
-  English decks headings switch to Syne automatically. The script picks this from `lang`
-  (auto-detected).
+- **Fonts.** A heading written in Latin is set in **Syne**, even inside a Russian deck (a product
+  name like «Meadow Slides» on a cover). A heading with any Cyrillic is **Geist**, because Syne
+  has no Cyrillic. The script decides per heading (cover, section, statement, slide and contacts
+  titles), so write the title in the language you want it set in. Body copy is always Geist,
+  labels **Geist Mono** caps, standalone numbers/KPIs **Syne** (from ~36px).
 - **Grid.** 96px margins, header (mono eyebrow + 64px title) on top, content between y=264
   and y=944, footer = logo + `NN / NN`. Gaps 24, card radius 24, padding 40.
 - **Say it with surfaces, not strokes.** Cards are separated by fill, not outlines. The only

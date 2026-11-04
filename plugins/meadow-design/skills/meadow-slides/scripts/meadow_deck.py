@@ -198,14 +198,17 @@ class Ctx:
         self.lang = deck.get("lang") or ("ru" if CYR.search(json.dumps(deck, ensure_ascii=False)) else "en")
         self.total = len(deck["slides"])
 
-    @property
-    def head_family(self):
-        # Syne has no Cyrillic: Russian decks set headings in Geist, English ones in Syne.
-        return "Geist" if self.lang == "ru" else "Syne"
+    # Headings follow their own text, not the deck language: a Latin-only heading is Syne
+    # even in a Russian deck; any Cyrillic means Geist (Syne has no Cyrillic glyphs).
+    @staticmethod
+    def is_latin(text):
+        return bool(re.search(r"[A-Za-z]", text or "")) and not CYR.search(text or "")
 
-    @property
-    def head_weight(self):
-        return 600 if self.lang == "ru" else 700
+    def head_family(self, text):
+        return "Syne" if self.is_latin(text) else "Geist"
+
+    def head_weight(self, text, geist=600, syne=700):
+        return syne if self.is_latin(text) else geist
 
 
 def asset(name, folder):
@@ -247,7 +250,7 @@ def header(s: Slide, ctx: Ctx, spec, width=1728):
         s.text(M, y, width, spec["eyebrow"], family="Geist Mono", weight=500, size=20, color=C["lime"],
                lh=1.2, caps=True, tracking=0.04, name="Eyebrow")
     y = 124
-    th = s.text(M, y, width, spec.get("title", ""), family=ctx.head_family, weight=ctx.head_weight, size=64,
+    th = s.text(M, y, width, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", "")), size=64,
                 lh=1.1, tracking=-0.02, max_h=150, name="Title")
     return max(CONTENT_TOP, y + th + 56)
 
@@ -338,7 +341,7 @@ def layout_cover(spec, ctx, s: Slide):
         s.rect(M, y, cw, 44, C["lime"], 22, name="Chip")
         s.text(M + 24, y + 11, cw - 40, spec["chip"], family="Geist Mono", weight=500, size=20, color=C["ink"], lh=1.1, caps=True, tracking=0.04)
         y += 44 + 32
-    th = s.text(M, y, 1300, spec.get("title", ""), family=ctx.head_family, weight=700 if ctx.lang == "ru" else 800,
+    th = s.text(M, y, 1300, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", ""), 700, 800),
                 size=spec.get("title_size", 160), lh=1.0, tracking=-0.03, max_h=340, name="Title")
     y += th + 32
     if spec.get("subtitle"):
@@ -363,7 +366,7 @@ def layout_section(spec, ctx, s: Slide):
     y = 400
     if spec.get("eyebrow"):
         s.text(M, y - 56, 1200, spec["eyebrow"], family="Geist Mono", weight=500, size=24, color=C["lime"], caps=True, tracking=0.04, lh=1.2)
-    y += s.text(M, y, 1400, spec.get("title", ""), family=ctx.head_family, weight=ctx.head_weight, size=112, lh=1.05, tracking=-0.03, max_h=360) + 32
+    y += s.text(M, y, 1400, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", "")), size=112, lh=1.05, tracking=-0.03, max_h=360) + 32
     if spec.get("subtitle"):
         s.text(M, y, 1000, spec["subtitle"], size=36, color=C["text2"], lh=1.35)
     footer(s, ctx)
@@ -373,7 +376,7 @@ def layout_statement(spec, ctx, s: Slide):
     if spec.get("eyebrow"):
         s.text(M, 240, 1200, spec["eyebrow"], family="Geist Mono", weight=500, size=20, color=C["lime"], caps=True, tracking=0.04, lh=1.2)
     y = 300
-    y += s.text(M, y, 1500, spec.get("title", ""), family=ctx.head_family, weight=ctx.head_weight, size=96, lh=1.1, tracking=-0.03, max_h=440) + 48
+    y += s.text(M, y, 1500, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", "")), size=96, lh=1.1, tracking=-0.03, max_h=440) + 48
     if spec.get("text"):
         s.text(M, y, 1100, spec["text"], size=36, color=C["text2"], lh=1.4, max_h=CONTENT_BOTTOM - y)
     footer(s, ctx)
@@ -526,7 +529,7 @@ def layout_case(spec, ctx, s: Slide):
     s.text(px, vy, rw - 80, str(r.get("value", "")), family="Syne", weight=700, size=vs, color=C["ink"], lh=1.0, typo=False)
     vw = font("Syne", 700, vs).getlength(str(r.get("value", "")))
     if r.get("unit"):
-        s.text(px + vw + 20, vy + vs - 60, rw - 120 - vw, r["unit"], family=ctx.head_family, weight=700, size=52, color=C["ink"], lh=1.0)
+        s.text(px + vw + 20, vy + vs - 60, rw - 120 - vw, r["unit"], family=ctx.head_family(r["unit"]), weight=700, size=52, color=C["ink"], lh=1.0)
     cy = vy + vs + 16
     if r.get("caption"):
         s.text(px, cy, 300, r["caption"], size=24, color=C["ink"], lh=1.3)
@@ -639,7 +642,7 @@ def layout_contacts(spec, ctx, s: Slide):
     logo(s, M, 96, 280)
     y = 400
     tw_ = 1300 if wide else 900
-    y += s.text(M, y, tw_, spec.get("title", ""), family=ctx.head_family, weight=600, size=128 if wide else 112, lh=1.05, tracking=-0.03, max_h=260) + 28
+    y += s.text(M, y, tw_, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", ""), 600, 700), size=128 if wide else 112, lh=1.05, tracking=-0.03, max_h=260) + 28
     if spec.get("subtitle"):
         y += s.text(M, y, tw_, spec["subtitle"], size=36, color=C["text2"], lh=1.35) + 48
     x = M

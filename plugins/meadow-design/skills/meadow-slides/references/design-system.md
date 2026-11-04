@@ -28,9 +28,9 @@ on dark is for eyebrows, step numbers, KPI values and bullets.
 
 | role | font | size / line height | notes |
 |---|---|---|---|
-| cover title | Geist Bold (ru) / Syne ExtraBold (en) | 160 / 1.0, −3% | ≤ 2 lines |
-| section / contacts title | Geist SemiBold / Syne Bold | 112–128 / 1.05, −3% | |
-| slide title | Geist SemiBold / Syne Bold | 64 / 1.1, −2% | y=124, ≤ 2 lines |
+| cover title | Syne ExtraBold (Latin) / Geist Bold (Cyrillic) | 160 / 1.0, −3% | ≤ 2 lines |
+| section / contacts title | Syne Bold (Latin) / Geist SemiBold (Cyrillic) | 112–128 / 1.05, −3% | |
+| slide title | Syne Bold (Latin) / Geist SemiBold (Cyrillic) | 64 / 1.1, −2% | y=124, ≤ 2 lines |
 | eyebrow | Geist Mono Medium, caps | 20 / 1.2, +4% | lime, y=88 |
 | card title | Geist SemiBold | 32 (28 when 4+ per row) / 1.25 | |
 | body | Geist Regular | 26–28 / 1.4–1.45 | text2 on dark |
@@ -41,7 +41,8 @@ on dark is for eyebrows, step numbers, KPI values and bullets.
 | page counter | Geist Mono Medium | 20 | `02 / 16`, dim |
 
 Syne has **no Cyrillic glyphs**: in Figma they fall back to a stand-in grotesque, in a browser to
-system fonts. Russian text is always Geist. Syne digits inside a Russian sentence look foreign
+system fonts. Russian text is always Geist. Headings pick their font from their own text:
+Latin-only → Syne, even in a Russian deck; any Cyrillic → Geist. Syne digits inside a Russian sentence look foreign
 (0 and 1 read like «o» and «l»), so Syne is used only for standalone numbers from ~36px.
 
 ## Grid

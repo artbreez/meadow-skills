@@ -32,7 +32,8 @@ Previews and PDFs are drawn by the script itself (`--png`, `--pdf`), no office a
 
 ## Install: Claude Design / claude.ai
 
-1. `./package.sh` → `dist/meadow-slides.zip` (or download it from the repo's Releases).
+1. Download `meadow-slides.zip` from the [latest release](https://github.com/artbreez/meadow-skills/releases/latest)
+   (or build it: `./package.sh` → `dist/meadow-slides.zip`).
 2. claude.ai → Settings → Capabilities → Skills → **Upload skill** → pick the zip.
    An org admin can upload it once for the whole organization instead.
 

@@ -7,7 +7,7 @@
       "name": "meadow-design",
       "source": "./plugins/meadow-design",
       "description": "Meadow brand skills: decks in the Meadow design system (PPTX + optional Figma) with image prompts.",
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

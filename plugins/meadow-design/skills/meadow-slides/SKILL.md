@@ -49,9 +49,11 @@ examples/sample-deck.json      a six-slide deck covering the main layouts (ficti
    follows other text inline (an icon after a number, a unit, a badge) is built with `flow=True`
    so it is checked for fit but not held to the grid.
 6. **Look at it.** Fastest, and works everywhere: add `--png preview/` to the build. It draws
-   the same layout with Pillow (exact geometry, approximate text). For a real office render, run
-   `python3 scripts/preview.py deck.pptx` (LibreOffice, or Keynote on macOS). Open
-   `contact-sheet.png` and the single slides. Check alignment, crowding, contrast over
+   the same layout with Pillow, measuring text the way Keynote does. To check that the PPTX
+   picks up the fonts on a Mac, `qlmanage -t -s 1600 -o preview/ deck.pptx` renders slide 1
+   through the system (no app opens). `python3 scripts/preview.py deck.pptx` uses LibreOffice,
+   or Keynote as a last resort: Keynote scripting can hang and leave a dialog on the user's
+   screen, so don't retry it in a loop. Open `contact-sheet.png` and the single slides. Check alignment, crowding, contrast over
    photos, empty half-cards, and collisions with the footer. Office renders need the fonts
    installed (`scripts/install_fonts.sh`).
 7. **Deliver** the .pptx. Mention that recipients need the fonts (`assets/fonts`, all free

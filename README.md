@@ -11,8 +11,9 @@ Brand skills for Claude, shared across the team. They work in **Claude Code** an
 
 <img src="docs/preview.png" alt="Six slides from a deck the skill built" width="100%">
 
-Just ask in plain words, e.g. *«сделай презу на 6 слайдов про контент-завод для клиента»*,
-*"turn this brief into a Meadow deck"*, *«промпты для обложки в стиле Meadow»*.
+Just ask in plain words, e.g. *"make a 6-slide client deck about our content factory"*,
+*"turn this brief into a Meadow deck"*, *"give me cover image prompts in the Meadow style"*.
+Russian works too.
 
 ## Install: Claude Code
 

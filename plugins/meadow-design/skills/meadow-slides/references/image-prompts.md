@@ -51,7 +51,7 @@ Save results next to the deck and reference them by path in the spec.
 
 ## Proven scenes (reuse or adapt)
 
-- **Content factory (cover of «Контент-завод»)**, prefix A: "A sleek futuristic content factory
+- **Content factory (the content-factory deck cover)**, prefix A: "A sleek futuristic content factory
   floor seen from a low three-quarter angle: a long glossy black conveyor belt with robotic
   arms and dark-glass inspection gates, carrying a steady stream of vertical 9:16 phone screens
   standing upright like products on an assembly line. Each screen shows a different everyday

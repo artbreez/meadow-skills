@@ -19,6 +19,7 @@ references/design-system.md  tokens and rules behind the layouts       <- read w
 references/image-prompts.md  prompt library for deck imagery           <- read when the deck needs new images
 references/figma.md      Figma output recipe and its gotchas            <- read only if Figma is wanted
 examples/sample-deck.json      a six-slide deck covering the main layouts (fictional data)
+examples/skill-intro-deck.json the deck that presents this skill (README images)
 ```
 
 ## Workflow

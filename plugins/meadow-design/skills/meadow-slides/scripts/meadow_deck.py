@@ -337,9 +337,10 @@ def layout_cover(spec, ctx, s: Slide):
     y = 300
     if spec.get("chip"):
         f = font("Geist Mono", 500, 20)
-        cw = f.getlength(typograph(spec["chip"].upper())) * 1.04 + 48
+        chip = typograph(spec["chip"].upper())
+        cw = f.getlength(chip) + 0.04 * 20 * (len(chip) - 1) + 48   # text + tracking + 24px each side
         s.rect(M, y, cw, 44, C["lime"], 22, name="Chip")
-        s.text(M + 24, y + 11, cw - 40, spec["chip"], family="Geist Mono", weight=500, size=20, color=C["ink"], lh=1.1, caps=True, tracking=0.04)
+        s.text(M + 24, y + 11, cw - 24, spec["chip"], family="Geist Mono", weight=500, size=20, color=C["ink"], lh=1.1, caps=True, tracking=0.04)
         y += 44 + 32
     th = s.text(M, y, 1300, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", ""), 700, 800),
                 size=spec.get("title_size", 160), lh=1.0, tracking=-0.03, max_h=340, name="Title")
@@ -859,7 +860,7 @@ def write_pdf(slides, path):
 
 
 def render_png(slides, outdir, scale=0.5):
-    """Draw the computed layout with Pillow. Approximates text metrics (no tracking),
+    """Draw the computed layout with Pillow. Close to the PPTX (tracking included),
     but needs no office app, so it works in any sandbox."""
     os.makedirs(outdir, exist_ok=True)
     tmp = tempfile.mkdtemp(prefix="meadow_png_")
@@ -901,10 +902,16 @@ def render_png(slides, outdir, scale=0.5):
                 f = font(pr["family"], pr["weight"], pr["size"] * scale)
                 lh = pr["size"] * pr["lh"] * scale
                 y = p.y * scale
+                tr = pr.get("tracking", 0) * pr["size"] * scale   # letter-spacing in px, as in the PPTX
                 for line in wrap(pr["text"], font(pr["family"], pr["weight"], pr["size"]), p.w):
-                    lw_ = f.getlength(line)
+                    lw_ = f.getlength(line) + tr * max(0, len(line) - 1)
                     x = p.x * scale + {"left": 0, "center": (p.w * scale - lw_) / 2, "right": p.w * scale - lw_}[pr["align"]]
-                    d.text((x, y + (lh - pr["size"] * scale) / 2), line, font=f, fill=_rgba(pr["color"]))
+                    ty = y + (lh - pr["size"] * scale) / 2
+                    if tr:   # draw glyph by glyph; prefix widths keep the font's kerning
+                        for i, ch in enumerate(line):
+                            d.text((x + f.getlength(line[:i]) + tr * i, ty), ch, font=f, fill=_rgba(pr["color"]))
+                    else:
+                        d.text((x, ty), line, font=f, fill=_rgba(pr["color"]))
                     y += lh
         path = os.path.join(outdir, f"slide-{s.index:02d}.png")
         im.convert("RGB").save(path)

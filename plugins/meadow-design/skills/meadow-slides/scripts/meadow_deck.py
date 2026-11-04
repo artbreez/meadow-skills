@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -1031,6 +1032,33 @@ def write_pdf(slides, path):
     pages[0].save(path, save_all=True, append_images=pages[1:], resolution=144)
 
 
+def _draw_line(im, line, x, baseline, hi, tr, asc, desc, width, color):
+    """Draw one line supersampled: glyphs placed at exact fractional positions on a 4x layer,
+    then box-filtered down. Drawing at 1x would round every glyph to a whole pixel and make
+    letter-spacing jitter."""
+    if not line.strip():
+        return
+    left, top = max(0, math.floor(x) - 2), max(0, math.floor(baseline - asc) - 2)
+    w_, h_ = math.ceil(width + x - left) + 4, math.ceil(baseline + desc - top) + 4
+    mask = Image.new("L", (w_ * 4, h_ * 4), 0)
+    d4 = ImageDraw.Draw(mask)
+    ox, oy = (x - left) * 4, (baseline - top) * 4
+    if tr:
+        for i, ch in enumerate(line):
+            if ch.strip():
+                d4.text((ox + hi.getlength(line[:i]) + tr * 4 * i, oy), ch, font=hi, fill=255, anchor="ls")
+    else:
+        d4.text((ox, oy), line, font=hi, fill=255, anchor="ls")
+    mask = mask.resize((w_, h_), Image.BOX)
+    if color[3] < 255:
+        mask = mask.point(lambda v: v * color[3] // 255)
+    layer = Image.new("RGBA", (w_, h_), color[:3] + (0,))
+    layer.putalpha(mask)
+    w_, h_ = min(w_, im.width - left), min(h_, im.height - top)
+    if w_ > 0 and h_ > 0:
+        im.alpha_composite(layer.crop((0, 0, w_, h_)), (left, top))
+
+
 def render_png(slides, outdir, scale=0.5):
     """Draw the computed layout with Pillow. Close to the PPTX (tracking included),
     but needs no office app, so it works in any sandbox."""
@@ -1079,19 +1107,18 @@ def render_png(slides, outdir, scale=0.5):
                 asc, desc, _ = vmetrics(pr["family"], pr["weight"])
                 if pr.get("valign") == "middle":
                     y = (p.y + (p.h - len(lines) * pr["size"] * pr["lh"]) / 2) * scale
-                hi = font(pr["family"], pr["weight"], pr["size"] * scale * 4)   # unhinted advances, like Keynote
+                sz = pr["size"] * scale
+                hi = font(pr["family"], pr["weight"], sz * 4)   # 4x: unhinted advances, like Keynote
                 adv = lambda t_: hi.getlength(t_) / 4
+                color = _rgba(pr["color"])
                 for line in lines:
                     lw_ = adv(line) + tr * max(0, len(line) - 1)
                     x = p.x * scale + {"left": 0, "center": (p.w * scale - lw_) / 2, "right": p.w * scale - lw_}[pr["align"]]
                     if pr.get("valign") == "middle":
-                        pos, anchor = (y + lh * asc / (asc + desc)), "ls"
+                        bl = y + lh * asc / (asc + desc)
                     else:
-                        pos, anchor = y + (lh - pr["size"] * scale) / 2, "la"
-                    # glyph by glyph at exact positions: prefix widths keep kerning, tracking is added
-                    for i, ch in enumerate(line):
-                        if ch.strip():
-                            d.text((x + adv(line[:i]) + tr * i, pos), ch, font=f, fill=_rgba(pr["color"]), anchor=anchor)
+                        bl = y + (lh - sz) / 2 + asc * sz
+                    _draw_line(im, line, x, bl, hi, tr, asc * sz, desc * sz, lw_, color)
                     y += lh
         path = os.path.join(outdir, f"slide-{s.index:02d}.png")
         im.convert("RGB").save(path)

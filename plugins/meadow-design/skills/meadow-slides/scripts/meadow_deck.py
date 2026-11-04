@@ -76,6 +76,11 @@ def pptx_font(family: str, weight: int, portable: bool):
         return family, False
     if weight == 700:
         return family, True
+    if family == "Syne":
+        # A variable Syne installed next to the static files (Google Fonts ships one) claims the
+        # family name "Syne ExtraBold" and Keynote then draws the Regular instance. The
+        # PostScript name always resolves to the static face.
+        return f"Syne-{STYLE_NAME[weight]}", False
     return f"{family} {STYLE_NAME[weight]}", False
 
 
@@ -978,23 +983,30 @@ def write_pptx(slides, out, portable=False, title="", embed_notes=False):
                 tf.vertical_anchor = {"top": MSO_ANCHOR.TOP, "middle": MSO_ANCHOR.MIDDLE, "bottom": MSO_ANCHOR.BOTTOM}[pr["valign"]]
                 fam, bold = pptx_font(pr["family"], pr["weight"], portable)
                 col, _ = rgb(pr["color"])
-                for i, line in enumerate(pr["text"].split("\n")):
+                mfont = font(pr["family"], pr["weight"], pr["size"])
+                for i, paragraph in enumerate(pr["text"].split("\n")):
                     para = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
                     para.alignment = {"left": PP_ALIGN.LEFT, "center": PP_ALIGN.CENTER, "right": PP_ALIGN.RIGHT}[pr["align"]]
                     para.line_spacing = Pt(pr["size"] * pr["lh"] / 2)
-                    run = para.add_run()
-                    run.text = line
-                    f = run.font
-                    f.size = Pt(pr["size"] / 2)
-                    f.name = fam
-                    f.bold = bold
-                    f.color.rgb = col
-                    rpr = run._r.get_or_add_rPr()
-                    for tag in ("a:ea", "a:cs"):
-                        e = etree.SubElement(rpr, qn(tag))
-                        e.set("typeface", fam)
-                    if pr["tracking"]:
-                        rpr.set("spc", str(int(pr["tracking"] * pr["size"] / 2 * 100)))
+                    # Our own wrap, written as soft line breaks: Keynote and PowerPoint would
+                    # otherwise re-wrap (Keynote breaks at hyphens), and the slide drifts from
+                    # the layout the checks approved. Editing still reflows within a line.
+                    for j, line in enumerate(wrap(paragraph, mfont, p.w)):
+                        if j:
+                            para.add_line_break()
+                        run = para.add_run()
+                        run.text = line
+                        f = run.font
+                        f.size = Pt(pr["size"] / 2)
+                        f.name = fam
+                        f.bold = bold
+                        f.color.rgb = col
+                        rpr = run._r.get_or_add_rPr()
+                        for tag in ("a:ea", "a:cs"):
+                            e = etree.SubElement(rpr, qn(tag))
+                            e.set("typeface", fam)
+                        if pr["tracking"]:
+                            rpr.set("spc", str(int(pr["tracking"] * pr["size"] / 2 * 100)))
                 if pr.get("link"):
                     tb.click_action.hyperlink.address = pr["link"]
                 if p.name:

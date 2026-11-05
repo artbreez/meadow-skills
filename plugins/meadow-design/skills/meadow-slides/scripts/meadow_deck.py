@@ -18,7 +18,9 @@ import math
 import os
 import re
 import sys
+import random
 import tempfile
+import zlib
 from dataclasses import dataclass, field
 
 from PIL import ImageChops, Image, ImageDraw, ImageFont
@@ -241,6 +243,8 @@ class Slide:
         self.notes = ""
         self.warnings: list[str] = []
         self.accents = 0
+        self.theme = "dark"
+        self.flower = None
 
     def rect(self, x, y, w, h, fill, radius=0, stroke=None, name="", link=None, flow=False):
         self.prims.append(Prim("rect", x, y, w, h, {"fill": fill, "radius": radius, "stroke": stroke, "link": link, "flow": flow}, name))
@@ -265,6 +269,15 @@ class Slide:
                   weight=weight, size=size, color=color, lh=a + d, tracking=tracking, typo=False,
                   valign="middle", h=h, link=link, name=name + " label", flow=flow)
         return w
+
+    def path(self, subpaths, *, fill=None, stroke=None, stroke_w=0, name=""):
+        """Vector shape. subpaths: [[("M",x,y), ("L",x,y), ("C",x1,y1,x2,y2,x,y), ("Z",)], ...] in
+        slide px; filled even-odd. Box = bounds of the points (control points included)."""
+        xs = [v for sp in subpaths for seg in sp for v in seg[1::2]]
+        ys = [v for sp in subpaths for seg in sp for v in seg[2::2]]
+        x0, y0 = min(xs), min(ys)
+        self.prims.append(Prim("path", x0, y0, max(xs) - x0, max(ys) - y0,
+                               {"subpaths": subpaths, "fill": fill, "stroke": stroke, "stroke_w": stroke_w}, name))
 
     def ellipse(self, x, y, d, fill, name=""):
         self.prims.append(Prim("ellipse", x, y, d, d, {"fill": fill}, name))
@@ -684,12 +697,16 @@ def layout_case(spec, ctx, s: Slide):
     vw = line_width(str(r.get("value", "")), "Syne", 700, vs)
     if r.get("unit"):
         s.text(px + vw + 20, vy + vs - 60, rw - 120 - vw, r["unit"], family=ctx.head_family(r["unit"]), weight=700, size=52, color=C["ink"], lh=1.0, flow=True)
-    cy = vy + vs + 16
+    a_, d_, _ = vmetrics("Syne", 700)
+    base_y = vy + a_ * vs                          # baseline of the hero number (lh 1.0)
+    cy = base_y + 28                               # caption row: clear air under the digits
     if r.get("caption"):
-        s.text(px, cy, 300, r["caption"], size=24, color=C["ink"], lh=1.3)
+        row_h = 36 if r.get("badge") else 24 * 1.3
+        s.text(px, cy + (row_h - 24 * 1.3) / 2, 300, r["caption"], size=24, color=C["ink"], lh=1.3)
         cwid = line_width(typograph(r["caption"]), "Geist", 400, 24)
         if r.get("badge"):
-            s.pill(px + cwid + 16, cy - 4, 36, r["badge"], fill=C["ink"], color=C["lime"], size=18, pad=16, name="Badge", flow=True)
+            s.pill(px + cwid + 16, cy, 36, r["badge"], fill=C["ink"], color=C["lime"], size=18, pad=16, name="Badge", flow=True)
+        cy += row_h
     tiles = r.get("tiles", [])
     tiles_h = 112 if tiles else 0
     ty = CONTENT_BOTTOM - 40 - tiles_h
@@ -904,8 +921,10 @@ def build(deck):
     ctx = Ctx(deck)
     slides = []
     for i, spec in enumerate(deck["slides"], 1):
-        use_theme(spec.get("theme") or deck.get("theme", "dark"))
+        theme = spec.get("theme") or deck.get("theme", "dark")
+        use_theme(theme)
         s = Slide(i, ctx.total)
+        s.theme, s.flower = theme, spec.get("flower")
         name = spec.get("layout")
         if name not in LAYOUTS:
             raise SystemExit(f"slide {i}: unknown layout {name!r}; choose from {sorted(LAYOUTS)}")
@@ -916,8 +935,140 @@ def build(deck):
         if s.accents > 1:
             s.warnings.append(f"slide {i}: {s.accents} accent plates; Meadow slides carry at most one")
         slides.append(s)
+    sprinkle_flowers(slides, deck)
     use_theme("dark")
     return ctx, slides
+
+
+# ---------------------------------------------------------------- flowers
+# Meadow's brand accents (assets/flowers/*.svg, from the investor deck). Drawn as native vectors.
+# Each SVG keeps its geometry; colour comes from the theme. An SVG with a stroke is an outline
+# flower, otherwise a filled one.
+FLOWER_COLORS = {
+    "light": {"fill": ["#D3FF31", "#5260DA"], "outline": "#5260DA"},
+    "dark": {"fill": ["#D3FF31", "#4E5BCF"], "outline": "#FFFFFF"},
+}
+_flower_cache = {}
+
+
+def _svg_path(d):
+    """Absolute M/L/H/V/C/Z path data -> subpaths of M/L/C/Z segments."""
+    toks = re.findall(r"[MLHVCZmlhvcz]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?", d)
+    subs, cur, x, y, i, cmd = [], None, 0.0, 0.0, 0, None
+    num = lambda k: float(toks[k])
+    while i < len(toks):
+        t = toks[i]
+        if t.isalpha():
+            if t.islower():
+                raise ValueError("flower SVGs must use absolute path commands")
+            cmd = t
+            i += 1
+            if cmd == "Z":
+                cur.append(("Z",))
+            continue
+        if cmd == "M":
+            x, y = num(i), num(i + 1); i += 2
+            cur = [("M", x, y)]; subs.append(cur); cmd = "L"
+        elif cmd == "L":
+            x, y = num(i), num(i + 1); i += 2; cur.append(("L", x, y))
+        elif cmd == "H":
+            x = num(i); i += 1; cur.append(("L", x, y))
+        elif cmd == "V":
+            y = num(i); i += 1; cur.append(("L", x, y))
+        elif cmd == "C":
+            seg = tuple(num(i + k) for k in range(6)); i += 6
+            x, y = seg[4], seg[5]; cur.append(("C",) + seg)
+        else:
+            raise ValueError(f"unsupported path command {cmd!r}")
+    return subs
+
+
+def flower_shapes():
+    if not _flower_cache:
+        folder = os.path.join(ASSETS, "flowers")
+        for f in sorted(os.listdir(folder)):
+            if not f.endswith(".svg"):
+                continue
+            svg = open(os.path.join(folder, f)).read()
+            vb = [float(v) for v in re.search(r'viewBox="([^"]+)"', svg).group(1).split()]
+            el = re.search(r'<path\b[^>]*\bd="([^"]+)"[^>]*>', svg)
+            outline = "stroke=" in el.group(0)
+            sw = float(re.search(r'stroke-width="([\d.]+)"', el.group(0)).group(1)) if outline else 0
+            _flower_cache[f[:-4]] = {"size": max(vb[2], vb[3]), "subpaths": _svg_path(el.group(1)), "outline": outline, "stroke_w": sw}
+    return _flower_cache
+
+
+def _place_flower(s: Slide, name, cx, cy, size, angle, color):
+    sh = flower_shapes()[name]
+    k = size / sh["size"]
+    ca, sa = math.cos(math.radians(angle)), math.sin(math.radians(angle))
+    h = sh["size"] / 2
+
+    def tr(px_, py_):
+        dx, dy = (px_ - h) * k, (py_ - h) * k
+        return cx + dx * ca - dy * sa, cy + dx * sa + dy * ca
+    subs = []
+    for sp in sh["subpaths"]:
+        out = []
+        for seg in sp:
+            pts = [tr(seg[j], seg[j + 1]) for j in range(1, len(seg), 2)]
+            out.append((seg[0],) + tuple(v for pt in pts for v in pt))
+        subs.append(out)
+    if sh["outline"]:
+        s.path(subs, stroke=color, stroke_w=max(1.5, sh["stroke_w"] * k * 0.8), name=f"Flower {name}")
+    else:
+        s.path(subs, fill=color, name=f"Flower {name}")
+
+
+def _occupied(s: Slide, pad=40):
+    boxes = []
+    for p in s.prims:
+        if p.kind == "text":
+            if not p.props["text"].strip():
+                continue
+            l, t, r, b = _ink_box(p)
+            boxes.append((l - pad, t - pad, r + pad, b + pad + p.props["size"] * 0.3))
+        else:
+            boxes.append((p.x - pad, p.y - pad, p.x + p.w + pad, p.y + p.h + pad))
+    return boxes
+
+
+def sprinkle_flowers(slides, deck):
+    """A few flowers, not many: about one slide in three gets one, never two slides in a row,
+    and only where it lands in clear space. Seeded from the deck, so rebuilds don't reshuffle.
+    Deck "flowers": true / false (default: on for light-theme slides only), "flowers_seed": n;
+    a slide's "flower": true / false forces it in or out."""
+    mode = deck.get("flowers")
+    if mode is False:
+        return
+    rng = random.Random(deck.get("flowers_seed", zlib.crc32(deck.get("title", "").encode())))
+    names = sorted(flower_shapes())
+    want = lambda s: s.flower if s.flower is not None else (mode is True or s.theme == "light")
+    pool = [s for s in slides if want(s)]
+    forced = [s for s in pool if s.flower is True]
+    budget = max(len(forced), round(len(pool) * 0.3))
+    order = forced + rng.sample([s for s in pool if s not in forced], len(pool) - len(forced))
+    placed, last = 0, set()
+    for s in order:
+        if placed >= budget:
+            break
+        if s.flower is not True and (s.index - 1 in last or s.index + 1 in last):
+            continue
+        boxes = _occupied(s)
+        for _ in range(300):
+            size = rng.uniform(80, 150)
+            cx, cy = rng.uniform(M / 2 + size / 2, W - M / 2 - size / 2), rng.uniform(56 + size / 2, H - 56 - size / 2)
+            r = size * 0.72   # rotation-safe half extent
+            if not any(cx + r > l and cx - r < rr and cy + r > t and cy - r < b for l, t, rr, b in boxes):
+                break
+        else:
+            continue
+        name = rng.choice(names)
+        pal = FLOWER_COLORS[s.theme]
+        color = pal["outline"] if flower_shapes()[name]["outline"] else rng.choice(pal["fill"])
+        _place_flower(s, name, cx, cy, size, rng.uniform(-30, 30), color)
+        placed += 1
+        last.add(s.index)
 
 
 # ---------------------------------------------------------------- image prep
@@ -1029,6 +1180,46 @@ def write_pptx(slides, out, portable=False, title="", embed_notes=False):
                     shp.click_action.hyperlink.address = p.props["link"]
                 if p.name:
                     shp.name = p.name
+            elif p.kind == "path":
+                w, h = max(w, Emu(1)), max(h, Emu(1))
+                shp = sl.shapes.add_shape(MSO_SHAPE.RECTANGLE, x, y, w, h)
+                spPr = shp._element.spPr
+                geom = spPr.find(qn("a:prstGeom"))
+                U = PX    # path units = EMU, same as the shape extent: QuickLook ignores any path scale
+                cg = etree.Element(qn("a:custGeom"))
+                for tag in ("a:avLst", "a:gdLst", "a:ahLst", "a:cxnLst"):
+                    etree.SubElement(cg, qn(tag))
+                rc = etree.SubElement(cg, qn("a:rect"))
+                for k_, v_ in (("l", "0"), ("t", "0"), ("r", "r"), ("b", "b")):
+                    rc.set(k_, v_)
+                pa = etree.SubElement(etree.SubElement(cg, qn("a:pathLst")), qn("a:path"))
+                pa.set("w", str(w))
+                pa.set("h", str(h))
+                if not p.props.get("fill"):
+                    pa.set("fill", "none")
+                for sp in p.props["subpaths"]:
+                    for seg in sp:
+                        if seg[0] == "Z":
+                            etree.SubElement(pa, qn("a:close"))
+                            continue
+                        el = etree.SubElement(pa, qn({"M": "a:moveTo", "L": "a:lnTo", "C": "a:cubicBezTo"}[seg[0]]))
+                        for j in range(1, len(seg), 2):
+                            pt = etree.SubElement(el, qn("a:pt"))
+                            pt.set("x", str(round((seg[j] - p.x) * U)))
+                            pt.set("y", str(round((seg[j + 1] - p.y) * U)))
+                geom.addprevious(cg)
+                spPr.remove(geom)
+                if p.props.get("fill"):
+                    fill_shape(shp, p.props["fill"])
+                else:
+                    shp.fill.background()
+                if p.props.get("stroke"):
+                    shp.line.color.rgb = rgb(p.props["stroke"])[0]
+                    shp.line.width = Emu(round(p.props["stroke_w"] * PX))
+                else:
+                    shp.line.fill.background()
+                shp.shadow.inherit = False
+                shp.name = p.name or "Flower"
             elif p.kind == "image":
                 path = prep_image(p, tmp, scale=1.0 if p.w * p.h > 400_000 else 2.0)
                 if p.props.get("fit") == "contain":
@@ -1137,6 +1328,46 @@ def _draw_line(im, line, x, baseline, hi, tr, asc, desc, width, color):
         im.alpha_composite(layer.crop((0, 0, w_, h_)), (left, top))
 
 
+def _flatten(sp, k):
+    pts, cur = [], (0, 0)
+    for seg in sp:
+        if seg[0] in ("M", "L"):
+            cur = (seg[1] * k, seg[2] * k)
+            pts.append(cur)
+        elif seg[0] == "C":
+            (x0, y0) = cur
+            (x1, y1), (x2, y2), (x3, y3) = [(seg[j] * k, seg[j + 1] * k) for j in (1, 3, 5)]
+            for i in range(1, 25):
+                t = i / 24
+                u = 1 - t
+                pts.append((u**3 * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t**3 * x3,
+                            u**3 * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t**3 * y3))
+            cur = (x3, y3)
+    return pts
+
+
+def _draw_path(im, p, scale):
+    """Even-odd fill and/or stroke, drawn at 4x and box-filtered down."""
+    ss = 4
+    k = scale * ss
+    mask = Image.new("L", (im.width * ss, im.height * ss), 0)
+    for sp in p.props["subpaths"]:
+        pts = _flatten(sp, k)
+        if len(pts) < 2:
+            continue
+        if p.props.get("fill"):
+            one = Image.new("L", mask.size, 0)
+            ImageDraw.Draw(one).polygon(pts, fill=255)
+            mask = ImageChops.logical_xor(mask.convert("1"), one.convert("1")).convert("L")
+        else:
+            ImageDraw.Draw(mask).line(pts + [pts[0]], fill=255, width=max(1, round(p.props["stroke_w"] * k)), joint="curve")
+    mask = mask.resize(im.size, Image.BOX)
+    col = _rgba(p.props.get("fill") or p.props["stroke"])
+    layer = Image.new("RGBA", im.size, col[:3] + (0,))
+    layer.putalpha(mask.point(lambda v: v * col[3] // 255))
+    return Image.alpha_composite(im, layer)
+
+
 def render_png(slides, outdir, scale=0.5):
     """Draw the computed layout with Pillow. Close to the PPTX (tracking included),
     but needs no office app, so it works in any sandbox."""
@@ -1157,6 +1388,8 @@ def render_png(slides, outdir, scale=0.5):
                 else:
                     d.rounded_rectangle(box, radius=p.props.get("radius", 0) * scale, fill=fill, outline=outline)
                 im = Image.alpha_composite(im, layer)
+            elif p.kind == "path":
+                im = _draw_path(im, p, scale)
             elif p.kind == "image":
                 src = prep_image(p, tmp, scale=scale) if p.props.get("fit") != "contain" else p.props["src"]
                 pic = Image.open(src).convert("RGBA")

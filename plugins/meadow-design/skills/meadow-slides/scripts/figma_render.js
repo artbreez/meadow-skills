@@ -53,6 +53,14 @@ for (const it of SLIDE.items) {
     n = figma.createEllipse();
     n.resize(it.w, it.h);
     n.fills = [paint(it.fill)];
+  } else if (it.kind === "path") {   // flowers: vector, even-odd, coordinates relative to the box
+    n = figma.createVector();
+    const r = (v, o) => (v - o).toFixed(2);
+    const data = it.subpaths.map(sp => sp.map(seg => seg[0] === "Z" ? "Z" :
+      seg[0] + " " + seg.slice(1).map((v, j) => r(v, j % 2 ? it.y : it.x)).join(" ")).join(" ")).join(" ");
+    n.vectorPaths = [{ windingRule: "EVENODD", data }];
+    n.fills = it.fill ? [paint(it.fill)] : [];
+    if (it.stroke) { n.strokes = [paint(it.stroke)]; n.strokeWeight = it.stroke_w; n.strokeJoin = "ROUND"; }
   } else if (it.kind === "text") {
     n = figma.createText();
     n.fontName = { family: it.family, style: STYLE[it.weight] };

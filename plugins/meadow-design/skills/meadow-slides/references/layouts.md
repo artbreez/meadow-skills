@@ -8,16 +8,27 @@ A deck is one JSON file:
   "lang": "en",                      // optional; auto: any Cyrillic -> ru
   "theme": "dark",                   // "dark" (default) or "light"; any slide can override it
   "footer": true,                    // logo + page counter on content slides
+  "flowers": true,                   // optional; default: on for light-theme slides only
+  "flowers_seed": 7,                 // optional; another number = another arrangement
   "slides": [ { "layout": "cover", ... }, ... ]
 }
 ```
 
-Every slide accepts `"notes"` (speaker notes), `"name"` (layer/frame name) and `"theme"`
-(e.g. one dark appendix slide in a light deck).
+Every slide accepts `"notes"` (speaker notes), `"name"` (layer/frame name), `"theme"`
+(e.g. one dark appendix slide in a light deck) and `"flower": true / false` (force a flower
+onto this slide, or keep it off).
 
 **Light theme:** cover, section and contacts hold their `background` as a rounded 720px panel
 on the right instead of full-bleed, so the copy column is narrower (the cover title shrinks
 until its longest word fits). `"background": null` gives a clean white slide with no image.
+
+**Flowers:** the brand accents from `assets/flowers/` (asterisk, 4-point star, blob outline,
+petals, blob) drawn as native vectors. They are sprinkled sparingly: about one slide in three,
+never two slides in a row, one per slide, 80–150px, slightly rotated, and only in clear space
+(at least 40px from any text, card or image; no room = no flower). Colours follow the theme:
+lime or blue fills, outlines blue on light and white on dark. The arrangement is seeded from the
+deck title, so a rebuild keeps it; change `flowers_seed` to reshuffle.
+
 Text fields are plain strings; `\n` forces a line break. Image fields take a bundled short
 name (`wave-05`) or a path. Icon lists take glyph names (`instagram`, `tiktok`, `youtube`, `vk`,
 `telegram`, `x`, `linkedin`, `twitch`).

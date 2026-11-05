@@ -20,6 +20,7 @@ references/image-prompts.md  prompt library for deck imagery           <- read w
 references/figma.md      Figma output recipe and its gotchas            <- read only if Figma is wanted
 examples/sample-deck.json      a six-slide deck covering the main layouts (fictional data)
 examples/sample-deck-light.json the same deck on the light theme
+examples/investor-deck.json    investor deck: team, highlight, chart, stats, a blue plate (fictional data)
 examples/skill-intro-deck.json the deck that presents this skill (README images)
 ```
 
@@ -78,10 +79,12 @@ mostly when you write copy or bend a layout.
   dark decks too. Don't place them by hand: the script finds room and keeps them sparse.
   Everything below is written for dark; the light theme swaps the same tokens (see
   `references/design-system.md`).
-- **Dark canvas, one lime plate.** Background #0E1013, cards #1A1D21, inner rows #23262B.
+- **Dark canvas, one accent plate.** Background #0E1013, cards #1A1D21, inner rows #23262B.
   Lime #D3FF31 marks the *one* thing the slide is about (the offer, the result, the key
-  callout). Two lime plates on a slide flatten the hierarchy. Don't paint a random card lime
+  callout). Two plates on a slide flatten the hierarchy. Don't paint a random card lime
   just to have an accent: a slide can have none. Text on lime is near-black, never white.
+  Any plate can be **blue** instead (`"accent": "blue"`, white text, lime badge): use it in
+  investor/light decks and to vary a run of lime slides. Still one plate per slide.
 - **Fonts.** A heading written in Latin is set in **Syne**, even inside a Russian deck (a product
   name like «Meadow Slides» on a cover). A heading with any Cyrillic is **Geist**, because Syne
   has no Cyrillic. The script decides per heading (cover, section, statement, slide and contacts

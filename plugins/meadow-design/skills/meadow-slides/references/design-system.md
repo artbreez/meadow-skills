@@ -18,7 +18,7 @@ All values are Figma px on a 1920×1080 frame. In PPTX 1px = 0.5pt (the script c
 | text2 | #C9CDD3 | body copy on dark |
 | muted | #9AA1AB | captions, mono labels, note lines |
 | dim | #6B7280 | page counter |
-| blue | #4E5BCF | secondary plate, only when someone asks for blue: lime is the default accent |
+| blue | #4E5BCF | the second plate colour (`"accent": "blue"`): white text, lime badge; one plate per slide either way |
 | brand blue | #5282FF | product UI "interactive" colour; don't use it on slides |
 
 ### Light theme (`"theme": "light"`)
@@ -39,7 +39,9 @@ the cover chip, the primary button. Same layouts, same grid, same type.
 | muted | #9AA1AB | #6B7280 | captions, mono labels |
 | dim | #6B7280 | #9AA1AB | page counter |
 | tile | #0E1013 | #FFFFFF | KPI tiles on the lime plate (values lime / ink) |
-| blue plate | #4E5BCF | #5260DA | secondary plate, only on request |
+| blue plate | #4E5BCF | #5260DA | second plate colour, `"accent": "blue"` |
+| rule | #FFFFFF26 | #DCDDE6 | hairlines between rows in ruled layouts (accent rules use `hi`) |
+| bar_past | #3A3F47 | #DCDDE6 | history bars next to accent bars in `chart` |
 | logo, glyphs | lime / white | black | |
 
 Images on light slides sit in a rounded panel, never under a white scrim: a white fade over a

@@ -87,8 +87,15 @@ Step titles ≤ 3 lines of ~22 characters at 4 per row. Up to 8 steps. With one-
 titles the cards look empty: give each step a short `text`, built from the user's own brief
 where possible, and tell them which lines you wrote.
 
+## Blue plates
+Every hero plate can be blue instead of lime: `"accent": "blue"` on a card, on the steps
+`callout`, on the `kpi` slide, on the `case` `result`, and on a `table` with `highlight_column`.
+On blue the text is white, the badge and the marker turn lime. Still one plate per slide, lime
+or blue: pick blue when the deck already leans blue (investor decks, the light theme) or when two
+neighbouring slides would both be lime.
+
 ## kpi
-The offer/package slide. Lime plate with 3 big + up to 4 small dark KPI tiles, a note line, and an
+The offer/package slide. Lime (or `"accent": "blue"`) plate with 3 big + up to 4 small dark KPI tiles, a note line, and an
 optional strip of next steps under the plate.
 ```json
 {"layout":"kpi","eyebrow":"Starter package","title":"Getting started",
@@ -130,6 +137,56 @@ Image on one side (860px wide, rounded), header + text + bullets on the other.
 ## logos
 Header + a grid of client logos (paths to PNG/SVG-rasterised files, white or light versions on
 the dark canvas, no tiles behind them). `columns_count` defaults to 6.
+
+## Ruled layouts (from the investor deck)
+Four airy layouts held together by thin rules instead of cards: an accent rule on top of a
+block, an accent caps label, a big Syne value, grey copy. Built for the light theme, work on dark.
+Each takes an optional `"subtitle"` under the title and a `"takeaway"` at the bottom: a string,
+or `{"label":"Two strengths","title":"The one line to remember","text":"a grey line under it"}`,
+drawn under an accent rule above the footer.
+
+### team
+2–4 people in columns. `photo` is a round crop on a lime disc: a cut-out PNG with transparency
+shows the disc around the person, a plain photo is cropped round. Name in Syne, role as an accent
+caps label, bio ~3 lines (over budget warns).
+```json
+{"layout":"team","title":"The people behind it",
+ "people":[{"photo":"path/person.png","name":"…","role":"CEO","bio":"…"}, …],
+ "takeaway":{"label":"Why us","title":"…"}}
+```
+
+### stats
+3–5 big numbers in one band, each under its own accent rule, label underneath; the band floats in
+the middle of the free space. Values shrink together until the widest fits its column.
+```json
+{"layout":"stats","eyebrow":"Track record","title":"…","subtitle":"…",
+ "stats":[{"value":"8x","label":"Revenue growth in two years"}, …],
+ "takeaway":{"title":"…","text":"…"}}
+```
+
+### chart
+Bars on the left, a column of headline numbers on the right (`stats`, 2–4 rows between hairlines,
+optional accent `note`). Bars: zero baseline, heights proportional; history is grey, bars with
+`"accent": true` (forecast, the year that matters) are in the accent colour. Without `stats` the
+chart takes the full width.
+```json
+{"layout":"chart","eyebrow":"Traction","title":"$340K to $1.9M in two years","chart_label":"Revenue",
+ "bars":[{"label":"2025","value":340,"display":"$340K"},{"label":"2027","note":"forecast","value":1900,"display":"$1.9M","accent":true}],
+ "stats":[{"label":"Average order","value":"$3K → $14K"},{"label":"Gross profit","value":"$0.4M → $0.9M","note":"Half of it from repeat clients"}],
+ "takeaway":"Target: break even in 2027"}
+```
+Don't put ~400x apart values on one chart (the small bars vanish): split the story across two slides.
+
+### highlight
+A big blue block with the claim: eyebrow, 2–4 short lines in large type, one of them (`mark`,
+0-based) on a lime marker, a source line; optional `stats` (2–3) and a takeaway under the block.
+`"accent": "lime"` makes the block lime with an ink marker.
+```json
+{"layout":"highlight","eyebrow":"Why now","lines":["Short video takes","4 of every 10 ad dollars","in our segment"],
+ "mark":1,"source":"Sample source, 2026",
+ "stats":[{"value":"$90B → $310B","label":"Market today and in eight years"}],
+ "takeaway":"The money has moved. The tools have not."}
+```
 
 ## contacts
 Closing slide: a photo held on the right and fading into the canvas (or a wide image

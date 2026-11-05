@@ -1,0 +1,192 @@
+{
+ "title": "Meadow sample investor deck (fictional data)",
+ "theme": "light",
+ "slides": [
+  {
+   "layout": "cover",
+   "background": "wave-05",
+   "chip": "Seed round · sample",
+   "title": "A sample pitch",
+   "subtitle": "A fictional company, to show the investor layouts",
+   "stats": [
+    {
+     "value": "$740K",
+     "label": "revenue this year"
+    },
+    {
+     "value": "38%",
+     "label": "gross margin"
+    },
+    {
+     "value": "9",
+     "label": "people"
+    }
+   ]
+  },
+  {
+   "layout": "team",
+   "title": "The people behind it",
+   "people": [
+    {
+     "photo": "people-02-camera-blue",
+     "name": "Alex Morgan",
+     "role": "CEO",
+     "bio": "Built and sold a marketing startup. Twelve years in media."
+    },
+    {
+     "photo": "people-03-blue-jacket",
+     "name": "Sam Rivera",
+     "role": "COO",
+     "bio": "Ran operations at a large agency. Owns delivery and the client side."
+    },
+    {
+     "photo": "people-01-lime-dress",
+     "name": "Jordan Lee",
+     "role": "CTO",
+     "bio": "Built data products at two startups. Owns the platform."
+    }
+   ],
+   "takeaway": {
+    "label": "Why us",
+    "title": "We have done this before, and we kept the data"
+   }
+  },
+  {
+   "layout": "highlight",
+   "eyebrow": "Why now",
+   "lines": [
+    "Short video takes",
+    "4 of every 10 ad dollars",
+    "in our segment"
+   ],
+   "mark": 1,
+   "source": "Sample source, 2026",
+   "stats": [
+    {
+     "value": "$90B → $310B",
+     "label": "Market today and in eight years"
+    },
+    {
+     "value": "23%",
+     "label": "Of teams have automated any of it"
+    }
+   ],
+   "takeaway": "The money has moved. The tools have not."
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "Traction",
+   "title": "$340K to $1.9M in two years",
+   "chart_label": "Revenue",
+   "bars": [
+    {
+     "label": "2024",
+     "value": 90,
+     "display": "$90K"
+    },
+    {
+     "label": "2025",
+     "value": 340,
+     "display": "$340K"
+    },
+    {
+     "label": "2026",
+     "note": "forecast",
+     "value": 880,
+     "display": "$880K",
+     "accent": true
+    },
+    {
+     "label": "2027",
+     "note": "forecast",
+     "value": 1900,
+     "display": "$1.9M",
+     "accent": true
+    }
+   ],
+   "stats": [
+    {
+     "label": "Average order",
+     "value": "$3K → $14K"
+    },
+    {
+     "label": "Gross margin",
+     "value": "38% today"
+    },
+    {
+     "label": "Gross profit, 2026 to 2027",
+     "value": "$0.4M → $0.9M",
+     "note": "Half of it from repeat clients"
+    }
+   ],
+   "takeaway": "Target: break even in 2027"
+  },
+  {
+   "layout": "stats",
+   "eyebrow": "Track record",
+   "title": "Three years of steady growth",
+   "subtitle": "Sample figures for the layout",
+   "stats": [
+    {
+     "value": "8x",
+     "label": "Revenue growth in two years"
+    },
+    {
+     "value": "21% → 38%",
+     "label": "Gross margin"
+    },
+    {
+     "value": "4,600+",
+     "label": "Videos delivered a year"
+    },
+    {
+     "value": "92%",
+     "label": "Clients who come back"
+    }
+   ],
+   "takeaway": {
+    "title": "Every process we automate shows up in the margin",
+    "text": "That is what the round pays for."
+   }
+  },
+  {
+   "layout": "cards",
+   "eyebrow": "The round",
+   "title": "What we raise and what it buys",
+   "subtitle": "Sample figures for the layout",
+   "cards": [
+    {
+     "label": "Raising",
+     "value": "$650K",
+     "text": "Seed round"
+    },
+    {
+     "label": "What it buys",
+     "accent": "blue",
+     "bullets": [
+      "Automate the manual steps",
+      "Hire two account leads",
+      "Launch in a second market"
+     ]
+    },
+    {
+     "label": "By end of 2027",
+     "value": "$1.9M",
+     "text": "Revenue at 45% gross margin"
+    }
+   ]
+  },
+  {
+   "layout": "contacts",
+   "background": "people-02-camera-blue",
+   "title": "Let's talk",
+   "subtitle": "founders@example.com",
+   "buttons": [
+    {
+     "label": "Site · mymeadow.ai",
+     "url": "https://mymeadow.ai"
+    }
+   ]
+  }
+ ]
+}

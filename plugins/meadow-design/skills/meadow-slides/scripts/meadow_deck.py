@@ -49,6 +49,7 @@ THEMES = {
         "lime2": "#C4EE2A",      # zebra stripe inside the lime table column
         "blue": "#4E5BCF",       # rare secondary plate, only when asked for
         "blue2": "#D9DDF7",      # secondary text on blue
+        "blue3": "#4552C2",      # zebra stripe inside a blue table column
         "white": "#FFFFFF",      # text on blue
         "fg": "#FFFFFF",         # primary text on the canvas and cards
         "hi": "#D3FF31",         # accent as ink: eyebrows, numbers, bullets, KPI values
@@ -59,6 +60,8 @@ THEMES = {
         "ink2": "#3D4713",       # secondary text on lime
         "tile": "#0E1013",       # KPI tiles on the lime plate
         "tile_value": "#D3FF31",
+        "rule": "#FFFFFF26",     # hairline between rows (ruled layouts)
+        "bar_past": "#3A3F47",   # bars that are history, next to accent bars
         "stroke": "#FFFFFF2E",   # 18% hairline (outline chips)
         "glass": "#FFFFFF1F",    # secondary button
         "glass_stroke": "#FFFFFF33",
@@ -76,6 +79,7 @@ THEMES = {
         "lime2": "#C4EE2A",
         "blue": "#5260DA",
         "blue2": "#D4D8F7",
+        "blue3": "#4A57CF",
         "white": "#FFFFFF",
         "fg": "#0A0A0A",
         "hi": "#5260DA",
@@ -86,6 +90,8 @@ THEMES = {
         "ink2": "#3D4713",
         "tile": "#FFFFFF",
         "tile_value": "#0A0A0A",
+        "rule": "#DCDDE6",
+        "bar_past": "#DCDDE6",
         "stroke": "#0A0A0A2E",
         "glass": "#0A0A0A0F",
         "glass_stroke": "#0A0A0A26",
@@ -370,6 +376,16 @@ def accent_colors(accent):
     return C["card"], C["fg"], C["muted"], C["hi"]
 
 
+def plate(accent):
+    """Colours for a hero plate: lime (default) or blue. Text on lime is ink, on blue white;
+    the badge flips to lime on blue so it still reads as the accent."""
+    if accent == "blue":
+        return {"fill": C["blue"], "fg": C["white"], "fg2": C["blue2"], "bar": C["white"],
+                "badge": C["lime"], "badge_text": C["ink"], "stripe": C["blue3"]}
+    return {"fill": C["lime"], "fg": C["ink"], "fg2": C["ink2"], "bar": C["ink"],
+            "badge": C["ink"], "badge_text": C["lime"], "stripe": C["lime2"]}
+
+
 def logo(s: Slide, x, y, w, dark=False):
     s.image(asset("meadow-logo-black.png" if dark else C["logo"], "logo"), x, y, w, w * 19.001 / 150, fit="contain", name="Logo")
 
@@ -383,7 +399,10 @@ def header(s: Slide, ctx: Ctx, spec, width=1728):
     y = 124
     th = s.text(M, y, width, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", "")), size=64,
                 lh=1.1, tracking=-0.02, max_h=150, name="Title")
-    return max(CONTENT_TOP, y + th + 56)
+    y += th
+    if spec.get("subtitle"):
+        y += 12 + s.text(M, y + 12, width, spec["subtitle"], size=28, color=C["text2"], lh=1.35, max_h=80, name="Subtitle")
+    return max(CONTENT_TOP, y + 56)
 
 
 def footer(s: Slide, ctx: Ctx, dark=False):
@@ -435,11 +454,11 @@ def card(s: Slide, x, y, w, h, c, *, title_size=32):
     if c.get("title"):
         cy += s.text(cx, cy, cw, c["title"], weight=600, size=title_size, color=fg, lh=1.25) + 20
     if c.get("text"):
-        cy += s.text(cx, cy, cw, c["text"], size=26, color=fg if accent == "lime" else C["text2"], lh=1.4) + 20
+        cy += s.text(cx, cy, cw, c["text"], size=26, color=fg if accent in ("lime", "blue") else C["text2"], lh=1.4) + 20
     if c.get("rows"):
         cy = numbered_rows(s, cx - 16, cy, cw + 32, c["rows"]) + 8
     if c.get("bullets"):
-        cy = bullets(s, cx, cy, cw, c["bullets"], color=fg, dot=fg if accent == "lime" else C["hi"])
+        cy = bullets(s, cx, cy, cw, c["bullets"], color=fg, dot=fg if accent in ("lime", "blue") else C["hi"])
     if c.get("note"):
         s.text(cx, cy + 4, cw, c["note"], size=22, color=fg2, lh=1.4)
         cy += s.measure(c["note"], cw, size=22, lh=1.4)
@@ -496,7 +515,7 @@ def layout_cover(spec, ctx, s: Slide):
         y += 44 + 32
     title, size = spec.get("title", ""), spec.get("title_size", 160)
     fam, wt = ctx.head_family(title), ctx.head_weight(title, 700, 800)
-    while size > 96 and max(line_width(w_, fam, wt, size, -0.03) for w_ in (typograph(title).replace("\n", " ").split(" "))) > min(1300, room):
+    while size > 72 and max(line_width(w_, fam, wt, size, -0.03) for w_ in (typograph(title).replace("\n", " ").split(" "))) > min(1300, room):
         size -= 8   # the longest word must fit the column (narrower next to a light-theme panel)
     th = s.text(M, y, min(1300, room), title, family=ctx.head_family(spec.get("title", "")), weight=wt,
                 size=size, lh=1.0, tracking=-0.03, max_h=340, name="Title")
@@ -506,9 +525,10 @@ def layout_cover(spec, ctx, s: Slide):
     stats = spec.get("stats", [])
     if stats:
         sx = M
-        sw = min(440, room / len(stats))
+        base_w = min(440, room / len(stats))
         for st in stats:
             vw = line_width(str(st["value"]), "Syne", 700, 48)
+            sw = max(base_w, vw + 38 * len(st.get("icons", [])) + 56)   # a wide value pushes the next stat over
             s.text(sx, 900, sw, str(st["value"]), family="Syne", weight=700, size=48, color=C["hi"], lh=1.0, typo=False)
             ix = sx + vw + 20
             for ic in st.get("icons", []):
@@ -516,6 +536,8 @@ def layout_cover(spec, ctx, s: Slide):
                 ix += 38
             s.text(sx, 962, sw - 24, st.get("label", ""), size=24, color=C["text2"], lh=1.3)
             sx += sw
+        if sx - M > room + 24:
+            s.warnings.append(f"slide {s.index}: cover stats are {sx - M:.0f}px wide, the column has {room:.0f}; shorten the values or drop one")
 
 
 def layout_section(spec, ctx, s: Slide):
@@ -623,7 +645,8 @@ def layout_kpi(spec, ctx, s: Slide):
     steps = spec.get("steps", [])
     plate_bottom = CONTENT_BOTTOM - (208 + GAP if steps else 0)
     s.accents += 1
-    s.rect(M, y, W - 2 * M, plate_bottom - y, C["lime"], R_CARD + 8, name="KPI plate")
+    P = plate(spec.get("accent", "lime"))
+    s.rect(M, y, W - 2 * M, plate_bottom - y, P["fill"], R_CARD + 8, name="KPI plate")
     tiles = spec.get("tiles", [])
     big, small = tiles[:3], tiles[3:]
     note_h = 56 if (spec.get("note_left") or spec.get("note_right")) else 0
@@ -636,8 +659,8 @@ def layout_kpi(spec, ctx, s: Slide):
             kpi_tile(s, *box, t)
     if note_h:
         ny = plate_bottom - 24 - 36
-        s.text(M + 32, ny, 1100, spec.get("note_left", ""), weight=600, size=24, color=C["ink"], lh=1.3)
-        s.text(W - M - 32 - 700, ny, 700, spec.get("note_right", ""), size=24, color=C["ink2"], lh=1.3, align="right")
+        s.text(M + 32, ny, 1100, spec.get("note_left", ""), weight=600, size=24, color=P["fg"], lh=1.3)
+        s.text(W - M - 32 - 700, ny, 700, spec.get("note_right", ""), size=24, color=P["fg2"], lh=1.3, align="right")
     if steps:
         sy = CONTENT_BOTTOM - 208
         lw = 300 if spec.get("steps_title") else 0
@@ -688,24 +711,25 @@ def layout_case(spec, ctx, s: Slide):
     r = spec.get("result", {})
     rx, rw = M + lw + GAP, W - 2 * M - lw - GAP
     s.accents += 1
-    s.rect(rx, y, rw, CONTENT_BOTTOM - y, C["lime"], R_CARD, name="Result plate")
+    P = plate(r.get("accent", "lime"))
+    s.rect(rx, y, rw, CONTENT_BOTTOM - y, P["fill"], R_CARD, name="Result plate")
     px = rx + 40
-    s.text(px, y + 40, rw - 80, r.get("label", ""), family="Geist Mono", weight=500, size=16, color=C["ink2"], caps=True, tracking=0.04, lh=1.3)
+    s.text(px, y + 40, rw - 80, r.get("label", ""), family="Geist Mono", weight=500, size=16, color=P["fg2"], caps=True, tracking=0.04, lh=1.3)
     vy = y + 84
     vs = 120
-    s.text(px, vy, rw - 80, str(r.get("value", "")), family="Syne", weight=700, size=vs, color=C["ink"], lh=1.0, typo=False)
+    s.text(px, vy, rw - 80, str(r.get("value", "")), family="Syne", weight=700, size=vs, color=P["fg"], lh=1.0, typo=False)
     vw = line_width(str(r.get("value", "")), "Syne", 700, vs)
     if r.get("unit"):
-        s.text(px + vw + 20, vy + vs - 60, rw - 120 - vw, r["unit"], family=ctx.head_family(r["unit"]), weight=700, size=52, color=C["ink"], lh=1.0, flow=True)
+        s.text(px + vw + 20, vy + vs - 60, rw - 120 - vw, r["unit"], family=ctx.head_family(r["unit"]), weight=700, size=52, color=P["fg"], lh=1.0, flow=True)
     a_, d_, _ = vmetrics("Syne", 700)
     base_y = vy + a_ * vs                          # baseline of the hero number (lh 1.0)
     cy = base_y + 28                               # caption row: clear air under the digits
     if r.get("caption"):
         row_h = 36 if r.get("badge") else 24 * 1.3
-        s.text(px, cy + (row_h - 24 * 1.3) / 2, 300, r["caption"], size=24, color=C["ink"], lh=1.3)
+        s.text(px, cy + (row_h - 24 * 1.3) / 2, 300, r["caption"], size=24, color=P["fg"], lh=1.3)
         cwid = line_width(typograph(r["caption"]), "Geist", 400, 24)
         if r.get("badge"):
-            s.pill(px + cwid + 16, cy, 36, r["badge"], fill=C["ink"], color=C["lime"], size=18, pad=16, name="Badge", flow=True)
+            s.pill(px + cwid + 16, cy, 36, r["badge"], fill=P["badge"], color=P["badge_text"], size=18, pad=16, name="Badge", flow=True)
         cy += row_h
     tiles = r.get("tiles", [])
     tiles_h = 112 if tiles else 0
@@ -719,9 +743,9 @@ def layout_case(spec, ctx, s: Slide):
         for i, b_ in enumerate(bars):
             cx = px + i * (bw_ + 32) + (bw_ - colw) / 2
             bh = (base - top - 56) * b_["value"] / vmax  # zero baseline: heights stay proportional
-            s.rect(cx, base - bh, colw, bh, C["ink"], 16)
-            s.text(cx - 40, base - bh - 52, colw + 80, b_.get("display", str(b_["value"])), family="Syne", weight=700, size=34, color=C["ink"], align="center", lh=1.1, typo=False)
-            s.text(cx - 40, base + 12, colw + 80, b_.get("label", ""), family="Geist Mono", weight=500, size=14, color=C["ink2"], align="center", caps=True, tracking=0.04, lh=1.2)
+            s.rect(cx, base - bh, colw, bh, P["bar"], 16)
+            s.text(cx - 40, base - bh - 52, colw + 80, b_.get("display", str(b_["value"])), family="Syne", weight=700, size=34, color=P["fg"], align="center", lh=1.1, typo=False)
+            s.text(cx - 40, base + 12, colw + 80, b_.get("label", ""), family="Geist Mono", weight=500, size=14, color=P["fg2"], align="center", caps=True, tracking=0.04, lh=1.2)
     for box, t in zip(grid(len(tiles), len(tiles), px - 16, ty, rw - 48, tiles_h, gap=16), tiles):
         kpi_tile(s, *box, {**t, "size": 40})
     footer(s, ctx)
@@ -735,25 +759,26 @@ def layout_table(spec, ctx, s: Slide):
     tw = W - 2 * M
     ws = [tw * w_ / sum(widths) for w_ in widths]
     hl = spec.get("highlight_column")
+    P = plate(spec.get("accent", "lime"))
     rh = min(88, (CONTENT_BOTTOM - y - 64) / max(1, len(rows)))
     if hl is not None:
         s.accents += 1
         hx = M + sum(ws[:hl])
-        s.rect(hx, y - 8, ws[hl], 64 + rh * len(rows) + 16, C["lime"], R_CARD)
+        s.rect(hx, y - 8, ws[hl], 64 + rh * len(rows) + 16, P["fill"], R_CARD)
     x = M
     for i, (c_, w_) in enumerate(zip(cols, ws)):
-        s.text(x + 24, y + 18, w_ - 48, c_, family="Geist Mono", weight=500, size=16, color=C["ink2"] if i == hl else C["muted"], caps=True, tracking=0.04, lh=1.3)
+        s.text(x + 24, y + 18, w_ - 48, c_, family="Geist Mono", weight=500, size=16, color=P["fg2"] if i == hl else C["muted"], caps=True, tracking=0.04, lh=1.3)
         x += w_
     y += 64
     for r_i, row in enumerate(rows):
         if r_i % 2 == 0:
             s.rect(M, y, tw, rh, C["card"], R_ROW)
             if hl is not None:
-                s.rect(M + sum(ws[:hl]), y, ws[hl], rh, C["lime2"], 0)
+                s.rect(M + sum(ws[:hl]), y, ws[hl], rh, P["stripe"], 0)
         x = M
         for i, (val, w_) in enumerate(zip(row, ws)):
             s.text(x + 24, y + (rh - 24 * 1.3) / 2, w_ - 48, val, weight=600 if i == 0 else 400, size=24,
-                   color=C["ink"] if i == hl else (C["fg"] if i == 0 else C["text2"]), lh=1.3, max_h=rh)
+                   color=P["fg"] if i == hl else (C["fg"] if i == 0 else C["text2"]), lh=1.3, max_h=rh)
             x += w_
         y += rh
     footer(s, ctx)
@@ -815,6 +840,189 @@ def layout_contacts(spec, ctx, s: Slide):
         bw = s.pill(x, y, 72, label, fill=C["lime"] if primary else C["glass"], color=C["ink"] if primary else C["fg"],
                     size=26, pad=36, stroke=None if primary else C["glass_stroke"], link=b.get("url"), typo=False, name="Button")
         x += bw + 20
+
+
+# ---------------------------------------------------------------- ruled layouts (investor deck)
+# Airy slides held together by thin rules instead of cards: accent rule on top of a block,
+# accent caps label, big Syne value, grey copy, and a takeaway line above the footer.
+def rule(s: Slide, x, y, w, color=None, h=2):
+    s.rect(x, y, w, h, color or C["hi"], 0, name="Rule")
+
+
+def label(s: Slide, x, y, w, text, color=None, size=20):
+    return s.text(x, y, w, text, family="Geist Mono", weight=500, size=size, color=color or C["hi"], caps=True,
+                  tracking=0.04, lh=1.2, name="Label")
+
+
+def takeaway(s: Slide, ctx: Ctx, spec, bottom=CONTENT_BOTTOM, ruled=True):
+    """The slide's conclusion at the bottom: rule, optional label, a line in Syne/Geist, a grey line.
+    `spec["takeaway"]` is a string or {"label","title","text"}. Returns the y the content above must stop at."""
+    t = spec.get("takeaway")
+    if not t:
+        return bottom
+    t = {"title": t} if isinstance(t, str) else t
+    w = W - 2 * M
+    fam, wt = ctx.head_family(t.get("title", "")), ctx.head_weight(t.get("title", ""))
+    th = s.measure(t.get("title", ""), w, family=fam, weight=wt, size=36, lh=1.3)
+    xh = s.measure(t.get("text", ""), w, size=24, lh=1.4)
+    lh_ = 24 + 16 if t.get("label") else 0
+    top = bottom - th - (xh + 10 if xh else 0) - lh_
+    y = top
+    if t.get("label"):
+        label(s, M, y, w, t["label"])
+        y += lh_
+    y += s.text(M, y, w, t.get("title", ""), family=fam, weight=wt, size=36, lh=1.3, name="Takeaway")
+    if xh:
+        s.text(M, y + 10, w, t["text"], size=24, color=C["text2"], lh=1.4)
+    if ruled:
+        rule(s, M, top - 40, w)
+        return top - 40 - 56
+    return top - 56
+
+
+def fit_size(text, fam, wt, size, width, floor=32):
+    while size > floor and line_width(text, fam, wt, size) > width:
+        size -= 4
+    return size
+
+
+def layout_team(spec, ctx, s: Slide):
+    """Investor deck 02: people in columns. Round photo on a lime disc (a cut-out PNG shows the
+    disc, a plain photo just crops round), name, role in accent caps, a short bio."""
+    y = header(s, ctx, spec)
+    bottom = takeaway(s, ctx, spec)
+    people = spec.get("people", [])
+    n = max(1, len(people))
+    gap = 64
+    cw = (W - 2 * M - gap * (n - 1)) / n
+    d = min(spec.get("photo_size", 240), cw * 0.7)
+    for i, pp in enumerate(people):
+        x = M + i * (cw + gap)
+        yy = y
+        if pp.get("photo") is not None:
+            s.ellipse(x, yy, d, C["lime"], name="Photo disc")
+            if pp.get("photo"):
+                s.image(asset(pp["photo"], "backgrounds"), x, yy, d, d, radius=d / 2, name="Photo")
+            yy += d + 32
+        nm = pp.get("name", "")
+        yy += s.text(x, yy, cw, nm, family=ctx.head_family(nm), weight=ctx.head_weight(nm), size=36, lh=1.2, name="Name") + 12
+        if pp.get("role"):
+            yy += label(s, x, yy, cw, pp["role"]) + 16
+        if pp.get("bio"):
+            s.text(x, yy, cw, pp["bio"], size=24, color=C["text2"], lh=1.45, max_h=bottom - yy, name="Bio")
+    footer(s, ctx)
+
+
+def layout_stats(spec, ctx, s: Slide):
+    """Investor deck 'Playbook': 3-5 big numbers in one band, each under its own accent rule."""
+    y = header(s, ctx, spec)
+    bottom = takeaway(s, ctx, spec)
+    stats = spec.get("stats", [])
+    n = max(1, len(stats))
+    gap = 56
+    cw = (W - 2 * M - gap * (n - 1)) / n
+    vs = min(fit_size(str(st.get("value", "")), "Syne", 700, 72 if n <= 3 else 64, cw) for st in stats) if stats else 64
+    lab_h = max([s.measure(st.get("label", ""), cw, size=26, lh=1.4) for st in stats] or [0])
+    band_h = 2 + 40 + vs + 24 + lab_h
+    by = y + max(0, (bottom - y - band_h) / 2)    # the band floats in the middle of the free space
+    for i, st in enumerate(stats):
+        x = M + i * (cw + gap)
+        rule(s, x, by, cw)
+        s.text(x, by + 42, cw, str(st.get("value", "")), family="Syne", weight=700, size=vs, lh=1.0, typo=False, name="Value")
+        s.text(x, by + 42 + vs + 24, cw, st.get("label", ""), size=26, color=C["text2"], lh=1.4, name="Stat label")
+    footer(s, ctx)
+
+
+def layout_chart(spec, ctx, s: Slide):
+    """Investor deck 'Traction': bars on the left (history grey, the bars that matter in the
+    accent colour), a column of headline numbers on the right, takeaway below.
+    Heights are proportional to the values with a zero baseline."""
+    y = header(s, ctx, spec)
+    bottom = takeaway(s, ctx, spec)
+    stats = spec.get("stats", [])
+    lw = (W - 2 * M) * (0.48 if stats else 1.0)
+    rule(s, M, y, lw)
+    label(s, M, y + 24, lw, spec.get("chart_label", ""))
+    bars = spec.get("bars", [])
+    if bars:
+        notes = any(b_.get("note") for b_ in bars)
+        foot = 16 + 32 * 1.1 + 8 + 22 * 1.3 + (22 * 1.3 if notes else 0)
+        top, base = y + 24 + 24 + 40, bottom - foot
+        vmax = max(b_["value"] for b_ in bars) or 1
+        gap = 40
+        bw = min(140, (lw - gap * (len(bars) - 1)) / len(bars))
+        for i, b_ in enumerate(bars):
+            x = M + i * (bw + gap)
+            bh = max(3, (base - top) * b_["value"] / vmax)
+            s.rect(x, base - bh, bw, bh, C["hi"] if b_.get("accent") else C["bar_past"], 0, name="Bar", flow=True)  # data, not grid
+            ty = base + 16
+            ty += s.text(x, ty, bw + gap - 8, b_.get("display", str(b_["value"])), family="Syne", weight=700, size=32, lh=1.1, typo=False, flow=True) + 8
+            ty += s.text(x, ty, bw + gap - 8, b_.get("label", ""), size=22, color=C["text2"], lh=1.3, flow=True)
+            if b_.get("note"):
+                s.text(x, ty, bw + gap - 8, b_["note"], size=22, color=C["text2"], lh=1.3, flow=True)
+    if stats:
+        rx = M + lw + 96
+        rw = W - M - rx
+        rh = (bottom - y) / len(stats)
+        for i, st in enumerate(stats):
+            yy = y + i * rh
+            rule(s, rx, yy, rw, C["rule"], 2)
+            label(s, rx, yy + 24, rw, st.get("label", ""), size=18)
+            vs = fit_size(str(st.get("value", "")), "Syne", 700, 56, rw)
+            s.text(rx, yy + 24 + 22 + 20, rw, str(st.get("value", "")), family="Syne", weight=700, size=vs, lh=1.0, typo=False)
+            if st.get("note"):
+                s.text(rx, yy + 24 + 22 + 20 + vs + 14, rw, st["note"], size=22, color=C["hi"], lh=1.3)
+    footer(s, ctx)
+
+
+def layout_highlight(spec, ctx, s: Slide):
+    """Investor deck 'Why now': a big blue (or lime) block with the claim, one line of it on a
+    marker, a source line; optional stats and a takeaway under the block."""
+    accent = spec.get("accent", "blue")
+    P = plate(accent)
+    s.accents += 1
+    lines = spec.get("lines") or str(spec.get("title", "")).split("\n")
+    mark = spec.get("mark")
+    size = spec.get("title_size", 88)
+    pad = 72
+    fams = [(ctx.head_family(l_), ctx.head_weight(l_)) for l_ in lines]
+    lh = size * 1.2
+    h = pad + (24 + 28 if spec.get("eyebrow") else 0) + len(lines) * lh + (24 + 22 * 1.3 if spec.get("source") else 0) + pad
+    y0 = 88
+    s.rect(M, y0, W - 2 * M, h, P["fill"], R_CARD, name="Highlight plate")
+    y = y0 + pad
+    if spec.get("eyebrow"):
+        label(s, M + pad, y, W - 2 * M - 2 * pad, spec["eyebrow"], color=C["lime"] if accent == "blue" else P["fg2"])
+        y += 24 + 28
+    for i, (l_, (fam, wt)) in enumerate(zip(lines, fams)):
+        # no negative tracking here: QuickLook/Google ignore it, and the marker must hug the line
+        # in every renderer, so the line is measured and drawn at its natural width
+        t = typograph(l_)
+        if i == mark:
+            il, ir = ink_x(t, fam, wt, size)
+            a_, _, cap = vmetrics(fam, wt)
+            base = y + (lh - size) / 2 + a_ * size           # baseline of this line
+            mp = 0.28 * size                                  # equal air above the caps and below the baseline
+            mfill, mtext = (C["lime"], C["ink"]) if accent == "blue" else (C["ink"], C["lime"])
+            s.rect(M + pad + il - mp, base - cap * size - mp, ir - il + 2 * mp, cap * size + 2 * mp, mfill, 16, name="Marker", flow=True)
+            s.text(M + pad, y, W - 2 * M - 2 * pad, l_, family=fam, weight=wt, size=size, color=mtext, lh=1.2, flow=True)
+        else:
+            s.text(M + pad, y, W - 2 * M - 2 * pad, l_, family=fam, weight=wt, size=size, color=P["fg"], lh=1.2)
+        y += lh
+    if spec.get("source"):
+        s.text(M + pad, y + 24, W - 2 * M - 2 * pad, spec["source"], weight=500, size=22, color=P["fg2"], lh=1.3)
+    bottom = takeaway(s, ctx, spec, ruled=False)
+    stats = spec.get("stats", [])
+    if stats:
+        sy = y0 + h + 56
+        cw = (W - 2 * M - 56 * (len(stats) - 1)) / len(stats)
+        for i, st in enumerate(stats):
+            x = M + i * (cw + 56)
+            s.text(x, sy, cw, str(st.get("value", "")), family="Syne", weight=700, size=48, lh=1.0, typo=False)
+            s.text(x, sy + 48 + 16, cw, st.get("label", ""), size=24, color=C["text2"], lh=1.35)
+        if sy + 48 + 16 + 64 > bottom + 56:
+            s.warnings.append(f"slide {s.index}: highlight stats run into the takeaway; shorten the block")
+    footer(s, ctx)
 
 
 LAYOUTS = {k[7:].replace("_", "-"): v for k, v in globals().items() if k.startswith("layout_")}

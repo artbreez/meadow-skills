@@ -11,7 +11,7 @@
    "steps":[{"title":"Content","text":"copy is kept word for word"},{"title":"Outline","text":"which slide, which layout"},{"title":"Spec","text":"a JSON description of the deck"},{"title":"Build","text":"PPTX plus checks"},{"title":"Preview","text":"every slide reviewed, then delivered"}],
    "callout":{"value":"1","label":"request in chat","title":"Claude does the rest","text":"The skill kicks in on its own when you ask for a deck in the Meadow style."}},
   {"layout":"cards","eyebrow":"Inside","title":"Everything a deck needs, in one package",
-   "cards":[{"number":"01","title":"13 layouts","text":"Cover, section, cards, steps, offer, case, table, quotes, contacts"},
+   "cards":[{"number":"01","title":"17 layouts","text":"Cover, section, cards, steps, offer, case, chart, team, contacts"},
             {"number":"02","title":"Image prompts","text":"3D studio, waves, night meadow, lifestyle, UGC, matched to each slide slot"},
             {"number":"03","title":"Fonts and assets","text":"Geist, Syne, logo, social icons, 13 brand backgrounds"},
             {"number":"04","title":"Brand rules","text":"Colour, grid, type, copy rules, alignment gate"}]},

@@ -945,9 +945,12 @@ def build(deck):
 # Each SVG keeps its geometry; colour comes from the theme. An SVG with a stroke is an outline
 # flower, otherwise a filled one.
 FLOWER_COLORS = {
-    "light": {"fill": ["#D3FF31", "#5260DA"], "outline": "#5260DA"},
-    "dark": {"fill": ["#D3FF31", "#4E5BCF"], "outline": "#FFFFFF"},
+    # solid fills, and "glass": a see-through tint with a border in the same colour (the original
+    # asterisk was white 10% + white stroke over a background blur; PPTX has no backdrop blur)
+    "light": {"fill": ["#D3FF31", "#5260DA"], "glass": [("#5260DA1F", "#5260DA")]},
+    "dark": {"fill": ["#D3FF31", "#4E5BCF"], "glass": [("#FFFFFF1A", "#FFFFFF"), ("#D3FF311F", "#D3FF31")]},
 }
+GLASS_SHARE = 0.5   # share of filled flowers drawn as glass; outline flowers are always glass
 _flower_cache = {}
 
 
@@ -998,7 +1001,8 @@ def flower_shapes():
     return _flower_cache
 
 
-def _place_flower(s: Slide, name, cx, cy, size, angle, color):
+def _place_flower(s: Slide, name, cx, cy, size, angle, color, glass=None):
+    """color = solid fill, or the border when `glass` (a translucent fill) is given."""
     sh = flower_shapes()[name]
     k = size / sh["size"]
     ca, sa = math.cos(math.radians(angle)), math.sin(math.radians(angle))
@@ -1015,7 +1019,9 @@ def _place_flower(s: Slide, name, cx, cy, size, angle, color):
             out.append((seg[0],) + tuple(v for pt in pts for v in pt))
         subs.append(out)
     if sh["outline"]:
-        s.path(subs, stroke=color, stroke_w=max(1.5, sh["stroke_w"] * k * 0.8), name=f"Flower {name}")
+        s.path(subs, fill=glass, stroke=color, stroke_w=max(1.5, sh["stroke_w"] * k * 0.8), name=f"Flower {name}")
+    elif glass:
+        s.path(subs, fill=glass, stroke=color, stroke_w=max(1.5, size / 60), name=f"Flower {name}")
     else:
         s.path(subs, fill=color, name=f"Flower {name}")
 
@@ -1065,8 +1071,11 @@ def sprinkle_flowers(slides, deck):
             continue
         name = rng.choice(names)
         pal = FLOWER_COLORS[s.theme]
-        color = pal["outline"] if flower_shapes()[name]["outline"] else rng.choice(pal["fill"])
-        _place_flower(s, name, cx, cy, size, rng.uniform(-30, 30), color)
+        if flower_shapes()[name]["outline"] or rng.random() < GLASS_SHARE:
+            glass, color = rng.choice(pal["glass"])
+        else:
+            glass, color = None, rng.choice(pal["fill"])
+        _place_flower(s, name, cx, cy, size, rng.uniform(-30, 30), color, glass)
         placed += 1
         last.add(s.index)
 
@@ -1350,22 +1359,27 @@ def _draw_path(im, p, scale):
     """Even-odd fill and/or stroke, drawn at 4x and box-filtered down."""
     ss = 4
     k = scale * ss
-    mask = Image.new("L", (im.width * ss, im.height * ss), 0)
+    size = (im.width * ss, im.height * ss)
+    fill = Image.new("1", size, 0)
+    line = Image.new("L", size, 0)
     for sp in p.props["subpaths"]:
         pts = _flatten(sp, k)
         if len(pts) < 2:
             continue
         if p.props.get("fill"):
-            one = Image.new("L", mask.size, 0)
-            ImageDraw.Draw(one).polygon(pts, fill=255)
-            mask = ImageChops.logical_xor(mask.convert("1"), one.convert("1")).convert("L")
-        else:
-            ImageDraw.Draw(mask).line(pts + [pts[0]], fill=255, width=max(1, round(p.props["stroke_w"] * k)), joint="curve")
-    mask = mask.resize(im.size, Image.BOX)
-    col = _rgba(p.props.get("fill") or p.props["stroke"])
-    layer = Image.new("RGBA", im.size, col[:3] + (0,))
-    layer.putalpha(mask.point(lambda v: v * col[3] // 255))
-    return Image.alpha_composite(im, layer)
+            one = Image.new("1", size, 0)
+            ImageDraw.Draw(one).polygon(pts, fill=1)
+            fill = ImageChops.logical_xor(fill, one)
+        if p.props.get("stroke"):
+            ImageDraw.Draw(line).line(pts + [pts[0]], fill=255, width=max(1, round(p.props["stroke_w"] * k)), joint="curve")
+    for key, mask in (("fill", fill.convert("L")), ("stroke", line)):   # fill first, border on top
+        if not p.props.get(key):
+            continue
+        col = _rgba(p.props[key])
+        layer = Image.new("RGBA", im.size, col[:3] + (0,))
+        layer.putalpha(mask.resize(im.size, Image.BOX).point(lambda v: v * col[3] // 255))
+        im = Image.alpha_composite(im, layer)
+    return im
 
 
 def render_png(slides, outdir, scale=0.5):

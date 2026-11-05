@@ -72,7 +72,8 @@ mostly when you write copy or bend a layout.
   investor-deck look: white canvas, ink type, blue #5260DA eyebrows/numbers/KPI values, lime
   only as a fill. Use light for investor/board decks, documents meant for print, or when the user
   asks for a white/light background. A single slide can override with its own `"theme"`.
-  Light decks get a few brand **flowers** (vector asterisk / star / petals / blobs) in clear
+  Light decks get a few brand **flowers** (vector asterisk / star / petals / blobs, solid or
+  glass: translucent tint + border) in clear
   space on about one slide in three; `"flowers": false` turns them off, `true` adds them to
   dark decks too. Don't place them by hand: the script finds room and keeps them sparse.
   Everything below is written for dark; the light theme swaps the same tokens (see

@@ -1,0 +1,190 @@
+{
+ "title": "Meadow sample light deck (fictional data)",
+ "theme": "light",
+ "slides": [
+  {
+   "layout": "cover",
+   "background": "wave-05",
+   "chip": "Sample · fictional numbers",
+   "title": "Creator video",
+   "subtitle": "A fictional company, to show the light theme and the ruled layouts",
+   "stats": [
+    {
+     "value": "3,200+",
+     "label": "creators"
+    },
+    {
+     "value": "38%",
+     "label": "repeat clients"
+    },
+    {
+     "value": "9",
+     "label": "markets"
+    }
+   ]
+  },
+  {
+   "layout": "team",
+   "title": "The people behind it",
+   "people": [
+    {
+     "photo": "people-02-camera-blue",
+     "name": "Alex Morgan",
+     "role": "Head of strategy",
+     "bio": "Twelve years in media. Plans the campaigns and owns the brief."
+    },
+    {
+     "photo": "people-03-blue-jacket",
+     "name": "Sam Rivera",
+     "role": "Head of delivery",
+     "bio": "Runs production with creators, from first draft to publishing."
+    },
+    {
+     "photo": "people-01-lime-dress",
+     "name": "Jordan Lee",
+     "role": "Head of data",
+     "bio": "Builds the matching and the reports clients see every week."
+    }
+   ],
+   "takeaway": {
+    "label": "How we work",
+    "title": "One team from the brief to the report"
+   }
+  },
+  {
+   "layout": "highlight",
+   "eyebrow": "Why video",
+   "lines": [
+    "Short video takes",
+    "4 of every 10 ad dollars",
+    "in our segment"
+   ],
+   "mark": 1,
+   "source": "Sample source, 2026",
+   "stats": [
+    {
+     "value": "$90B → $310B",
+     "label": "Market today and in eight years"
+    },
+    {
+     "value": "23%",
+     "label": "Of brands publish video every week"
+    }
+   ],
+   "takeaway": "The audience has moved. Most brands have not caught up yet."
+  },
+  {
+   "layout": "chart",
+   "eyebrow": "Results",
+   "title": "Views per month, first year",
+   "chart_label": "Views, millions",
+   "bars": [
+    {
+     "label": "Q1",
+     "value": 0.9,
+     "display": "0.9M"
+    },
+    {
+     "label": "Q2",
+     "value": 2.1,
+     "display": "2.1M"
+    },
+    {
+     "label": "Q3",
+     "value": 4.6,
+     "display": "4.6M",
+     "accent": true
+    },
+    {
+     "label": "Q4",
+     "value": 7.8,
+     "display": "7.8M",
+     "accent": true
+    }
+   ],
+   "stats": [
+    {
+     "label": "Cost per 1,000 views",
+     "value": "$9 → $4"
+    },
+    {
+     "label": "Videos a month",
+     "value": "60 → 240"
+    },
+    {
+     "label": "Creators involved",
+     "value": "12 → 45",
+     "note": "Half of them on repeat briefs"
+    }
+   ],
+   "takeaway": "The longer a stream runs, the cheaper each view gets"
+  },
+  {
+   "layout": "stats",
+   "eyebrow": "In numbers",
+   "title": "What a year of work looks like",
+   "subtitle": "Sample figures for the layout",
+   "stats": [
+    {
+     "value": "8x",
+     "label": "Growth in monthly views"
+    },
+    {
+     "value": "21% → 38%",
+     "label": "Share of repeat clients"
+    },
+    {
+     "value": "4,600+",
+     "label": "Videos delivered a year"
+    },
+    {
+     "value": "92%",
+     "label": "Briefs approved on the first draft"
+    }
+   ],
+   "takeaway": {
+    "title": "Every brief we run makes the next one faster",
+    "text": "Matching and reporting learn from each campaign."
+   }
+  },
+  {
+   "layout": "cards",
+   "eyebrow": "Working together",
+   "title": "What you get",
+   "subtitle": "Sample offer for the layout",
+   "cards": [
+    {
+     "label": "Start",
+     "value": "$4,500",
+     "text": "a month, 3 creators"
+    },
+    {
+     "label": "Included",
+     "accent": "blue",
+     "bullets": [
+      "Creator matching",
+      "Briefs and approvals",
+      "Weekly report"
+     ]
+    },
+    {
+     "label": "Scale",
+     "value": "$12,000",
+     "text": "a month, 10 creators"
+    }
+   ]
+  },
+  {
+   "layout": "contacts",
+   "background": "people-02-camera-blue",
+   "title": "Let's talk",
+   "subtitle": "hello@example.com",
+   "buttons": [
+    {
+     "label": "Site · mymeadow.ai",
+     "url": "https://mymeadow.ai"
+    }
+   ]
+  }
+ ]
+}

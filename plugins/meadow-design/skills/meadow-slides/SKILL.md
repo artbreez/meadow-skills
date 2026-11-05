@@ -20,7 +20,7 @@ references/image-prompts.md  prompt library for deck imagery           <- read w
 references/figma.md      Figma output recipe and its gotchas            <- read only if Figma is wanted
 examples/sample-deck.json      a six-slide deck covering the main layouts (fictional data)
 examples/sample-deck-light.json the same deck on the light theme
-examples/investor-deck.json    investor deck: team, highlight, chart, stats, a blue plate (fictional data)
+examples/light-ruled-deck.json light deck with the ruled layouts: team, highlight, chart, stats, a blue plate (fictional data)
 examples/skill-intro-deck.json the deck that presents this skill (README images)
 ```
 
@@ -70,8 +70,8 @@ These are the rules people check first. The layouts already apply them, so they 
 mostly when you write copy or bend a layout.
 
 - **Two themes.** Dark is the default (sales decks, client offers). `"theme": "light"` is the
-  investor-deck look: white canvas, ink type, blue #5260DA eyebrows/numbers/KPI values, lime
-  only as a fill. Use light for investor/board decks, documents meant for print, or when the user
+  calm white look: white canvas, ink type, blue #5260DA eyebrows/numbers/KPI values, lime
+  only as a fill. Use light for decks that will be printed or read rather than presented, or when the user
   asks for a white/light background. A single slide can override with its own `"theme"`.
   Light decks get a few brand **flowers** (vector asterisk / star / petals / blobs, solid or
   glass: translucent tint + border) in clear
@@ -84,7 +84,7 @@ mostly when you write copy or bend a layout.
   callout). Two plates on a slide flatten the hierarchy. Don't paint a random card lime
   just to have an accent: a slide can have none. Text on lime is near-black, never white.
   Any plate can be **blue** instead (`"accent": "blue"`, white text, lime badge): use it in
-  investor/light decks and to vary a run of lime slides. Still one plate per slide.
+  light decks and to vary a run of lime slides. Still one plate per slide.
 - **Fonts.** A heading written in Latin is set in **Syne**, even inside a Russian deck (a product
   name like «Meadow Slides» on a cover). A heading with any Cyrillic is **Geist**, because Syne
   has no Cyrillic. The script decides per heading (cover, section, statement, slide and contacts

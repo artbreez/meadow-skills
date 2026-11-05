@@ -11,7 +11,7 @@ Brand skills for Claude, shared across the team. They work in **Claude Code** an
 
 <img src="docs/preview.png" alt="Six slides from a deck the skill built" width="100%">
 
-Two themes: dark (default) and light, the white investor-deck look (`"theme": "light"`, or just
+Two themes: dark (default) and light, a white canvas with blue accents and thin rules (`"theme": "light"`, or just
 ask for a light deck).
 
 Just ask in plain words, e.g. *"make a 6-slide client deck about our content factory"*,

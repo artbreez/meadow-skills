@@ -69,7 +69,7 @@ THEMES = {
         "logo": "meadow-logo-lime.png",
         "icon": "white",
     },
-    # Light: the investor-deck look. White canvas, ink type, blue #5260DA as the accent *ink*
+    # Light: a calm white look. White canvas, ink type, blue #5260DA as the accent *ink*
     # (lime type vanishes on white), lime stays the one plate.
     "light": {
         "bg": "#FFFFFF",
@@ -842,7 +842,7 @@ def layout_contacts(spec, ctx, s: Slide):
         x += bw + 20
 
 
-# ---------------------------------------------------------------- ruled layouts (investor deck)
+# ---------------------------------------------------------------- ruled layouts
 # Airy slides held together by thin rules instead of cards: accent rule on top of a block,
 # accent caps label, big Syne value, grey copy, and a takeaway line above the footer.
 def rule(s: Slide, x, y, w, color=None, h=2):
@@ -887,7 +887,7 @@ def fit_size(text, fam, wt, size, width, floor=32):
 
 
 def layout_team(spec, ctx, s: Slide):
-    """Investor deck 02: people in columns. Round photo on a lime disc (a cut-out PNG shows the
+    """Team: people in columns. Round photo on a lime disc (a cut-out PNG shows the
     disc, a plain photo just crops round), name, role in accent caps, a short bio."""
     y = header(s, ctx, spec)
     bottom = takeaway(s, ctx, spec)
@@ -914,7 +914,7 @@ def layout_team(spec, ctx, s: Slide):
 
 
 def layout_stats(spec, ctx, s: Slide):
-    """Investor deck 'Playbook': 3-5 big numbers in one band, each under its own accent rule."""
+    """Stats: 3-5 big numbers in one band, each under its own accent rule."""
     y = header(s, ctx, spec)
     bottom = takeaway(s, ctx, spec)
     stats = spec.get("stats", [])
@@ -934,7 +934,7 @@ def layout_stats(spec, ctx, s: Slide):
 
 
 def layout_chart(spec, ctx, s: Slide):
-    """Investor deck 'Traction': bars on the left (history grey, the bars that matter in the
+    """Chart: bars on the left (history grey, the bars that matter in the
     accent colour), a column of headline numbers on the right, takeaway below.
     Heights are proportional to the values with a zero baseline."""
     y = header(s, ctx, spec)
@@ -976,7 +976,7 @@ def layout_chart(spec, ctx, s: Slide):
 
 
 def layout_highlight(spec, ctx, s: Slide):
-    """Investor deck 'Why now': a big blue (or lime) block with the claim, one line of it on a
+    """Highlight: a big blue (or lime) block with the claim, one line of it on a
     marker, a source line; optional stats and a takeaway under the block."""
     accent = spec.get("accent", "blue")
     P = plate(accent)
@@ -1149,7 +1149,7 @@ def build(deck):
 
 
 # ---------------------------------------------------------------- flowers
-# Meadow's brand accents (assets/flowers/*.svg, from the investor deck). Drawn as native vectors.
+# Meadow's brand accents (assets/flowers/*.svg). Drawn as native vectors.
 # Each SVG keeps its geometry; colour comes from the theme. An SVG with a stroke is an outline
 # flower, otherwise a filled one.
 FLOWER_COLORS = {

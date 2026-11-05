@@ -91,7 +91,7 @@ where possible, and tell them which lines you wrote.
 Every hero plate can be blue instead of lime: `"accent": "blue"` on a card, on the steps
 `callout`, on the `kpi` slide, on the `case` `result`, and on a `table` with `highlight_column`.
 On blue the text is white, the badge and the marker turn lime. Still one plate per slide, lime
-or blue: pick blue when the deck already leans blue (investor decks, the light theme) or when two
+or blue: pick blue when the deck already leans blue (the light theme) or when two
 neighbouring slides would both be lime.
 
 ## kpi
@@ -138,7 +138,7 @@ Image on one side (860px wide, rounded), header + text + bullets on the other.
 Header + a grid of client logos (paths to PNG/SVG-rasterised files, white or light versions on
 the dark canvas, no tiles behind them). `columns_count` defaults to 6.
 
-## Ruled layouts (from the investor deck)
+## Ruled layouts
 Four airy layouts held together by thin rules instead of cards: an accent rule on top of a
 block, an accent caps label, a big Syne value, grey copy. Built for the light theme, work on dark.
 Each takes an optional `"subtitle"` under the title and a `"takeaway"` at the bottom: a string,

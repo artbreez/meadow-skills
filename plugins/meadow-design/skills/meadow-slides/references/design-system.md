@@ -23,7 +23,7 @@ All values are Figma px on a 1920×1080 frame. In PPTX 1px = 0.5pt (the script c
 
 ### Light theme (`"theme": "light"`)
 
-The investor-deck look: white canvas, ink type, blue as the accent *ink*. Lime type disappears
+A calm white look: white canvas, ink type, blue as the accent *ink*. Lime type disappears
 on white, so everything that is lime text on dark (eyebrows, step numbers, bullets, standalone
 KPI values, the quote mark) turns blue #5260DA. Lime survives as fills only: the one plate,
 the cover chip, the primary button. Same layouts, same grid, same type.

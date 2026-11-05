@@ -103,7 +103,8 @@ mostly when you write copy or bend a layout.
 
 ## Images
 
-Bundled: 6 abstract blue/lime waves (`wave-01…06`), 3 night meadows (`meadow-night-01…03`),
+Bundled: 6 abstract blue/lime waves (`wave-01…06`), 2 light backgrounds for the light theme
+(`light-wave-01` glass waves, `light-flowers-01` 3D flowers), 3 night meadows (`meadow-night-01…03`),
 4 lifestyle people shots (`people-…`), and white platform glyphs (`instagram`, `tiktok`,
 `youtube`, `vk`, `telegram`, `x`, `linkedin`, `twitch`). Waves suit covers and section
 breaks, meadows suit contacts and closing slides, people shots suit contacts and image-text

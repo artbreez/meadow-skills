@@ -18,9 +18,11 @@ Every slide accepts `"notes"` (speaker notes), `"name"` (layer/frame name), `"th
 (e.g. one dark appendix slide in a light deck) and `"flower": true / false` (force a flower
 onto this slide, or keep it off).
 
-**Light theme:** cover, section and contacts hold their `background` as a rounded 720px panel
-on the right instead of full-bleed, so the copy column is narrower (the cover title shrinks
-until its longest word fits). `"background": null` gives a clean white slide with no image.
+**Light theme:** cover and section default to `light-wave-01` (glass waves on white), contacts
+to `light-flowers-01` (3D flowers on white); light pictures like these go full-bleed with no scrim
+and the copy keeps to the left. A dark picture (`wave-05`, a photo) becomes a rounded 720px panel
+on the right instead, with a narrower copy column (the cover title shrinks until its longest word
+fits). `"background": null` gives a clean white slide with no image.
 
 **Flowers:** the brand accents from `assets/flowers/` (asterisk, 4-point star, blob outline,
 petals, blob) drawn as native vectors. They are sprinkled sparingly: about one slide in three,

@@ -4,7 +4,6 @@
  "slides": [
   {
    "layout": "cover",
-   "background": "wave-05",
    "chip": "Sample · fictional numbers",
    "title": "Creator campaign",
    "subtitle": "How a brand gets a steady stream of short videos from real creators",
@@ -224,7 +223,6 @@
   },
   {
    "layout": "contacts",
-   "background": "people-02-camera-blue",
    "title": "Ready to launch?",
    "subtitle": "Write to us and we'll scope the task and pick the creators",
    "buttons": [

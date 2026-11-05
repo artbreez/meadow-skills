@@ -484,16 +484,32 @@ def grid(n, cols, x, y, w, h, gap=GAP, rows_h=None):
 LIGHT_PANEL_W = 720
 
 
-def backdrop(s: Slide, spec, default, bottom=H - M):
+# Light images made for the light theme go full-bleed behind the copy; the number is how wide
+# the copy column may be before it runs into the picture.
+LIGHT_ROOM = {"light-wave-01": 860, "light-flowers-01": 820}
+
+
+def is_light_image(path):
+    with Image.open(path) as im_:
+        g = im_.convert("L").resize((64, 36))
+    return sum(g.getdata()) / (64 * 36) > 200
+
+
+def backdrop(s: Slide, spec, default, bottom=H - M, light_default=None):
     """The image behind a cover / section / contacts slide. Returns the width the copy may use.
     Dark theme: wide images go full-bleed under a scrim, portrait ones sit on the right and fade
-    into the canvas. Light theme: the image is a rounded panel on the right (a white scrim over
-    a dark image only greys it out), or nothing at all with "background": null."""
-    name = spec.get("background", default)
+    into the canvas. Light theme: a light image (light-wave-01, light-flowers-01, or any picture
+    that is mostly white) goes full-bleed with no scrim; a dark image becomes a rounded panel on
+    the right (a white scrim over it only greys it out); "background": null = plain white."""
+    light = C["bg"] != THEMES["dark"]["bg"]
+    name = spec.get("background", (light_default or default) if light else default)
     if not name:
         return W - 2 * M
     bg = asset(name, "backgrounds")
-    if C["bg"] != THEMES["dark"]["bg"]:
+    if light:
+        if is_light_image(bg):
+            s.image(bg, 0, 0, W, H, name="Background")
+            return LIGHT_ROOM.get(os.path.splitext(os.path.basename(bg))[0], 1000)
         s.image(bg, W - M - LIGHT_PANEL_W, M, LIGHT_PANEL_W, bottom - M, radius=R_CARD, name="Photo")
         return W - 2 * M - LIGHT_PANEL_W - 96
     with Image.open(bg) as im_:
@@ -506,7 +522,7 @@ def backdrop(s: Slide, spec, default, bottom=H - M):
 
 
 def layout_cover(spec, ctx, s: Slide):
-    room = backdrop(s, spec, "wave-05")
+    room = backdrop(s, spec, "wave-05", light_default="light-wave-01")
     logo(s, M, 96, 280)
     y = 300
     if spec.get("chip"):
@@ -541,7 +557,7 @@ def layout_cover(spec, ctx, s: Slide):
 
 
 def layout_section(spec, ctx, s: Slide):
-    room = backdrop(s, spec, "wave-02", bottom=CONTENT_BOTTOM)
+    room = backdrop(s, spec, "wave-02", bottom=CONTENT_BOTTOM, light_default="light-wave-01")
     y = 400
     if spec.get("eyebrow"):
         s.text(M, y - 56, 1200, spec["eyebrow"], family="Geist Mono", weight=500, size=24, color=C["hi"], caps=True, tracking=0.04, lh=1.2)
@@ -826,7 +842,7 @@ def layout_logos(spec, ctx, s: Slide):
 
 
 def layout_contacts(spec, ctx, s: Slide):
-    room = backdrop(s, spec, "people-02-camera-blue")
+    room = backdrop(s, spec, "people-02-camera-blue", light_default="light-flowers-01")
     logo(s, M, 96, 280)
     y = 400
     tw_ = min(1300, room)

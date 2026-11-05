@@ -4,7 +4,6 @@
  "slides": [
   {
    "layout": "cover",
-   "background": "wave-05",
    "chip": "Sample · fictional numbers",
    "title": "Creator video",
    "subtitle": "A fictional company, to show the light theme and the ruled layouts",
@@ -176,7 +175,6 @@
   },
   {
    "layout": "contacts",
-   "background": "people-02-camera-blue",
    "title": "Let's talk",
    "subtitle": "hello@example.com",
    "buttons": [

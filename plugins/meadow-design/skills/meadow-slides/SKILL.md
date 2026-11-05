@@ -1,6 +1,6 @@
 ---
 name: meadow-slides
-description: Build presentation decks in the Meadow brand design system (black canvas, acid-lime #D3FF31 plate, Geist/Syne type, 1920×1080 grid) as PowerPoint .pptx, and optionally as editable Figma frames, plus image-generation prompts for the deck's backgrounds and illustrations. Use this whenever someone at Meadow asks for slides, a deck, a pitch, a commercial offer (КП), a case study, a one-pager in slide form, a client presentation, or wants an existing deck re-laid out "in Meadow style" — in Russian or English, even if they don't say "skill", "PPTX" or "design system". Also use it when they need prompts for deck imagery (cover art, backgrounds, people shots) in the Meadow look.
+description: Build presentation decks in the Meadow brand design system (black canvas or a light white theme, acid-lime #D3FF31 plate, Geist/Syne type, 1920×1080 grid) as PowerPoint .pptx, and optionally as editable Figma frames, plus image-generation prompts for the deck's backgrounds and illustrations. Use this whenever someone at Meadow asks for slides, a deck, a pitch, a commercial offer (КП), a case study, a one-pager in slide form, a client presentation, or wants an existing deck re-laid out "in Meadow style" — in Russian or English, even if they don't say "skill", "PPTX" or "design system". Also use it when they need prompts for deck imagery (cover art, backgrounds, people shots) in the Meadow look.
 ---
 
 # Meadow slides
@@ -19,6 +19,7 @@ references/design-system.md  tokens and rules behind the layouts       <- read w
 references/image-prompts.md  prompt library for deck imagery           <- read when the deck needs new images
 references/figma.md      Figma output recipe and its gotchas            <- read only if Figma is wanted
 examples/sample-deck.json      a six-slide deck covering the main layouts (fictional data)
+examples/sample-deck-light.json the same deck on the light theme
 examples/skill-intro-deck.json the deck that presents this skill (README images)
 ```
 
@@ -39,7 +40,7 @@ examples/skill-intro-deck.json the deck that presents this skill (README images)
    are bundled short names (`wave-05`, `meadow-night-02`, `people-02-camera-blue`) or paths.
 5. **Build:** `python3 scripts/meadow_deck.py deck.json -o deck.pptx`.
    Treat every `WARN` as a bug: shorten copy, split the slide, or switch layout, then rebuild.
-   `WARN` lines cover overflowing text, Cyrillic set in Syne (no Cyrillic glyphs), more than one
+   `WARN` lines cover overflowing text (and single words wider than their box), Cyrillic set in Syne (no Cyrillic glyphs), more than one
    accent plate on a slide, and the **alignment gate**, which runs on every build:
    - text not optically centred in a pill, chip, button or badge (ink padding left/right and
      cap height top/bottom must match within 1.5px);
@@ -67,6 +68,12 @@ examples/skill-intro-deck.json the deck that presents this skill (README images)
 These are the rules people check first. The layouts already apply them, so they matter
 mostly when you write copy or bend a layout.
 
+- **Two themes.** Dark is the default (sales decks, client offers). `"theme": "light"` is the
+  investor-deck look: white canvas, ink type, blue #5260DA eyebrows/numbers/KPI values, lime
+  only as a fill. Use light for investor/board decks, documents meant for print, or when the user
+  asks for a white/light background. A single slide can override with its own `"theme"`.
+  Everything below is written for dark; the light theme swaps the same tokens (see
+  `references/design-system.md`).
 - **Dark canvas, one lime plate.** Background #0E1013, cards #1A1D21, inner rows #23262B.
   Lime #D3FF31 marks the *one* thing the slide is about (the offer, the result, the key
   callout). Two lime plates on a slide flatten the hierarchy. Don't paint a random card lime

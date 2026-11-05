@@ -6,12 +6,18 @@ A deck is one JSON file:
 {
   "title": "Creator campaign",       // file metadata
   "lang": "en",                      // optional; auto: any Cyrillic -> ru
+  "theme": "dark",                   // "dark" (default) or "light"; any slide can override it
   "footer": true,                    // logo + page counter on content slides
   "slides": [ { "layout": "cover", ... }, ... ]
 }
 ```
 
-Every slide accepts `"notes"` (speaker notes) and `"name"` (layer/frame name).
+Every slide accepts `"notes"` (speaker notes), `"name"` (layer/frame name) and `"theme"`
+(e.g. one dark appendix slide in a light deck).
+
+**Light theme:** cover, section and contacts hold their `background` as a rounded 720px panel
+on the right instead of full-bleed, so the copy column is narrower (the cover title shrinks
+until its longest word fits). `"background": null` gives a clean white slide with no image.
 Text fields are plain strings; `\n` forces a line break. Image fields take a bundled short
 name (`wave-05`) or a path. Icon lists take glyph names (`instagram`, `tiktok`, `youtube`, `vk`,
 `telegram`, `x`, `linkedin`, `twitch`).

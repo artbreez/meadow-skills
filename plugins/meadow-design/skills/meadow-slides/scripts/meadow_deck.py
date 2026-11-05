@@ -38,20 +38,68 @@ R_CARD = 24
 R_ROW = 16
 PAD = 40                    # card padding
 
-C = {
-    "bg": "#0E1013",
-    "card": "#1A1D21",
-    "row": "#23262B",
-    "lime": "#D3FF31",
-    "blue": "#4E5BCF",       # rare secondary plate, only when asked for
-    "white": "#FFFFFF",
-    "text2": "#C9CDD3",      # body copy on dark
-    "muted": "#9AA1AB",      # captions, labels
-    "dim": "#6B7280",        # page numbers
-    "ink": "#0E1013",        # text on lime
-    "ink2": "#3D4713",       # secondary text on lime
-    "stroke": "#FFFFFF2E",   # 18% white hairline (outline chips)
+THEMES = {
+    "dark": {
+        "bg": "#0E1013",
+        "card": "#1A1D21",
+        "row": "#23262B",
+        "lime": "#D3FF31",
+        "lime2": "#C4EE2A",      # zebra stripe inside the lime table column
+        "blue": "#4E5BCF",       # rare secondary plate, only when asked for
+        "blue2": "#D9DDF7",      # secondary text on blue
+        "white": "#FFFFFF",      # text on blue
+        "fg": "#FFFFFF",         # primary text on the canvas and cards
+        "hi": "#D3FF31",         # accent as ink: eyebrows, numbers, bullets, KPI values
+        "text2": "#C9CDD3",      # body copy
+        "muted": "#9AA1AB",      # captions, labels
+        "dim": "#6B7280",        # page numbers
+        "ink": "#0E1013",        # text on lime
+        "ink2": "#3D4713",       # secondary text on lime
+        "tile": "#0E1013",       # KPI tiles on the lime plate
+        "tile_value": "#D3FF31",
+        "stroke": "#FFFFFF2E",   # 18% hairline (outline chips)
+        "glass": "#FFFFFF1F",    # secondary button
+        "glass_stroke": "#FFFFFF33",
+        "scrim": (14, 16, 19),   # photo scrims fade into this
+        "logo": "meadow-logo-lime.png",
+        "icon": "white",
+    },
+    # Light: the investor-deck look. White canvas, ink type, blue #5260DA as the accent *ink*
+    # (lime type vanishes on white), lime stays the one plate.
+    "light": {
+        "bg": "#FFFFFF",
+        "card": "#F2F3F5",
+        "row": "#E6E8EC",
+        "lime": "#D3FF31",
+        "lime2": "#C4EE2A",
+        "blue": "#5260DA",
+        "blue2": "#D4D8F7",
+        "white": "#FFFFFF",
+        "fg": "#0A0A0A",
+        "hi": "#5260DA",
+        "text2": "#3D3D3D",
+        "muted": "#6B7280",
+        "dim": "#9AA1AB",
+        "ink": "#0E1013",
+        "ink2": "#3D4713",
+        "tile": "#FFFFFF",
+        "tile_value": "#0A0A0A",
+        "stroke": "#0A0A0A2E",
+        "glass": "#0A0A0A0F",
+        "glass_stroke": "#0A0A0A26",
+        "scrim": (255, 255, 255),
+        "logo": "meadow-logo-black.png",
+        "icon": "black",
+    },
 }
+C = dict(THEMES["dark"])   # current slide's tokens; build() swaps them per slide
+
+
+def use_theme(name):
+    if name not in THEMES:
+        raise SystemExit(f"unknown theme {name!r}; choose from {sorted(THEMES)}")
+    C.clear()
+    C.update(THEMES[name])
 
 # family, style  -> font file + PPTX (family, bold) in exact / portable mode
 FONT_FILES = {
@@ -187,8 +235,8 @@ class Prim:
 
 
 class Slide:
-    def __init__(self, index, total, bg=C["bg"]):
-        self.index, self.total, self.bg = index, total, bg
+    def __init__(self, index, total, bg=None):
+        self.index, self.total, self.bg = index, total, bg or C["bg"]
         self.prims: list[Prim] = []
         self.notes = ""
         self.warnings: list[str] = []
@@ -222,14 +270,16 @@ class Slide:
         self.prims.append(Prim("ellipse", x, y, d, d, {"fill": fill}, name))
 
     def image(self, path, x, y, w, h, radius=0, name="", scrim=None, fit="cover", flow=False):
-        self.prims.append(Prim("image", x, y, w, h, {"src": path, "radius": radius, "scrim": scrim, "fit": fit, "flow": flow}, name))
+        self.prims.append(Prim("image", x, y, w, h, {"src": path, "radius": radius, "scrim": scrim, "fit": fit, "flow": flow,
+                                                     "scrim_rgb": C["scrim"] if scrim else None}, name))
 
-    def text(self, x, y, w, text, *, family="Geist", weight=400, size=28, color=C["white"], lh=1.3,
+    def text(self, x, y, w, text, *, family="Geist", weight=400, size=28, color=None, lh=1.3,
              align="left", tracking=0.0, caps=False, max_h=None, name="", typo=True, valign="top", h=None, link=None,
              flow=False):
         """Place a text block, return its measured height."""
         if text is None:
             return 0
+        color = color or C["fg"]
         text = str(text)
         if caps:
             text = text.upper()
@@ -239,6 +289,9 @@ class Slide:
         lines = wrap(text, f, w)
         mh = len(lines) * size * lh
         bh = h if h is not None else mh
+        wide = max(lines, key=lambda l_: _adv(f, l_))
+        if not flow and _adv(f, wide) + tracking * size * max(0, len(wide) - 1) > w + 1:
+            self.warnings.append(f"slide {self.index}: {wide[:40]!r} is wider than its {w:.0f}px box and cannot wrap")
         if max_h is not None and mh > max_h + 1:
             self.warnings.append(f"slide {self.index}: text overflows ({int(mh)}>{int(max_h)}px): {text[:50]!r}")
         if family == "Syne" and CYR.search(text):
@@ -281,7 +334,8 @@ def asset(name, folder):
         return None
     if os.path.exists(name):
         return os.path.abspath(name)
-    for ext in ("", ".jpg", ".png", "-white.png"):
+    exts = ("", ".jpg", ".png", f"-{C['icon']}.png", "-white.png") if folder == "icons" else ("", ".jpg", ".png")
+    for ext in exts:
         p = os.path.join(ASSETS, folder, name + ext)
         if os.path.exists(p):
             return p
@@ -299,19 +353,19 @@ def accent_colors(accent):
     if accent == "lime":
         return C["lime"], C["ink"], C["ink2"], C["ink"]
     if accent == "blue":
-        return C["blue"], C["white"], "#D9DDF7", C["white"]
-    return C["card"], C["white"], C["muted"], C["lime"]
+        return C["blue"], C["white"], C["blue2"], C["white"]
+    return C["card"], C["fg"], C["muted"], C["hi"]
 
 
 def logo(s: Slide, x, y, w, dark=False):
-    s.image(asset("meadow-logo-black.png" if dark else "meadow-logo-lime.png", "logo"), x, y, w, w * 19.001 / 150, fit="contain", name="Logo")
+    s.image(asset("meadow-logo-black.png" if dark else C["logo"], "logo"), x, y, w, w * 19.001 / 150, fit="contain", name="Logo")
 
 
 def header(s: Slide, ctx: Ctx, spec, width=1728):
     """Eyebrow + title. Returns y where content may start."""
     y = 88
     if spec.get("eyebrow"):
-        s.text(M, y, width, spec["eyebrow"], family="Geist Mono", weight=500, size=20, color=C["lime"],
+        s.text(M, y, width, spec["eyebrow"], family="Geist Mono", weight=500, size=20, color=C["hi"],
                lh=1.2, caps=True, tracking=0.04, name="Eyebrow")
     y = 124
     th = s.text(M, y, width, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", "")), size=64,
@@ -327,7 +381,8 @@ def footer(s: Slide, ctx: Ctx, dark=False):
            color=C["ink2"] if dark else C["dim"], lh=1.2, align="right", typo=False, name="Page")
 
 
-def bullets(s: Slide, x, y, w, items, *, size=26, color=C["white"], dot=C["lime"], gap=18, lh=1.35):
+def bullets(s: Slide, x, y, w, items, *, size=26, color=None, dot=None, gap=18, lh=1.35):
+    color, dot = color or C["fg"], dot or C["hi"]
     for it in items:
         s.ellipse(x, y + size * lh / 2 - 5, 10, dot)
         y += s.text(x + 28, y, w - 28, it, size=size, color=color, lh=lh) + gap
@@ -337,7 +392,7 @@ def bullets(s: Slide, x, y, w, items, *, size=26, color=C["white"], dot=C["lime"
 def numbered_rows(s: Slide, x, y, w, items, *, size=28, h=76):
     for i, it in enumerate(items, 1):
         s.rect(x, y, w, h, C["row"], R_ROW)
-        s.text(x + 24, y + (h - 24) / 2, 50, f"{i:02d}", family="Geist Mono", weight=500, size=20, color=C["lime"], lh=1.2, typo=False)
+        s.text(x + 24, y + (h - 24) / 2, 50, f"{i:02d}", family="Geist Mono", weight=500, size=20, color=C["hi"], lh=1.2, typo=False)
         s.text(x + 80, y + (h - size * 1.2) / 2, w - 104, it, weight=500, size=size, lh=1.2)
         y += h + 12
     return y
@@ -371,7 +426,7 @@ def card(s: Slide, x, y, w, h, c, *, title_size=32):
     if c.get("rows"):
         cy = numbered_rows(s, cx - 16, cy, cw + 32, c["rows"]) + 8
     if c.get("bullets"):
-        cy = bullets(s, cx, cy, cw, c["bullets"], color=fg, dot=fg if accent == "lime" else C["lime"])
+        cy = bullets(s, cx, cy, cw, c["bullets"], color=fg, dot=fg if accent == "lime" else C["hi"])
     if c.get("note"):
         s.text(cx, cy + 4, cw, c["note"], size=22, color=fg2, lh=1.4)
         cy += s.measure(c["note"], cw, size=22, lh=1.4)
@@ -394,27 +449,54 @@ def grid(n, cols, x, y, w, h, gap=GAP, rows_h=None):
 
 
 # ---------------------------------------------------------------- layouts
+LIGHT_PANEL_W = 720
+
+
+def backdrop(s: Slide, spec, default, bottom=H - M):
+    """The image behind a cover / section / contacts slide. Returns the width the copy may use.
+    Dark theme: wide images go full-bleed under a scrim, portrait ones sit on the right and fade
+    into the canvas. Light theme: the image is a rounded panel on the right (a white scrim over
+    a dark image only greys it out), or nothing at all with "background": null."""
+    name = spec.get("background", default)
+    if not name:
+        return W - 2 * M
+    bg = asset(name, "backgrounds")
+    if C["bg"] != THEMES["dark"]["bg"]:
+        s.image(bg, W - M - LIGHT_PANEL_W, M, LIGHT_PANEL_W, bottom - M, radius=R_CARD, name="Photo")
+        return W - 2 * M - LIGHT_PANEL_W - 96
+    with Image.open(bg) as im_:
+        wide = im_.width / im_.height > 1.5
+    if wide:
+        s.image(bg, 0, 0, W, H, scrim=spec.get("scrim", "left"), name="Background")
+        return W - 2 * M
+    s.image(bg, W - 1040, 0, 1040, H, scrim="fade-left", name="Photo")
+    return 900
+
+
 def layout_cover(spec, ctx, s: Slide):
-    bg = asset(spec.get("background", "wave-05"), "backgrounds")
-    s.image(bg, 0, 0, W, H, scrim=spec.get("scrim", "left"), name="Background")
+    room = backdrop(s, spec, "wave-05")
     logo(s, M, 96, 280)
     y = 300
     if spec.get("chip"):
         s.pill(M, y, 44, spec["chip"], fill=C["lime"], color=C["ink"], family="Geist Mono", weight=500,
                size=20, pad=24, tracking=0.04, caps=True, name="Chip")
         y += 44 + 32
-    th = s.text(M, y, 1300, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", ""), 700, 800),
-                size=spec.get("title_size", 160), lh=1.0, tracking=-0.03, max_h=340, name="Title")
+    title, size = spec.get("title", ""), spec.get("title_size", 160)
+    fam, wt = ctx.head_family(title), ctx.head_weight(title, 700, 800)
+    while size > 96 and max(line_width(w_, fam, wt, size, -0.03) for w_ in (typograph(title).replace("\n", " ").split(" "))) > min(1300, room):
+        size -= 8   # the longest word must fit the column (narrower next to a light-theme panel)
+    th = s.text(M, y, min(1300, room), title, family=ctx.head_family(spec.get("title", "")), weight=wt,
+                size=size, lh=1.0, tracking=-0.03, max_h=340, name="Title")
     y += th + 32
     if spec.get("subtitle"):
-        s.text(M, y, 860, spec["subtitle"], size=40, color=C["text2"], lh=1.3, max_h=160)
+        s.text(M, y, min(860, room), spec["subtitle"], size=40, color=C["text2"], lh=1.3, max_h=160)
     stats = spec.get("stats", [])
     if stats:
         sx = M
-        sw = min(440, (W - 2 * M) / len(stats))
+        sw = min(440, room / len(stats))
         for st in stats:
             vw = line_width(str(st["value"]), "Syne", 700, 48)
-            s.text(sx, 900, sw, str(st["value"]), family="Syne", weight=700, size=48, color=C["lime"], lh=1.0, typo=False)
+            s.text(sx, 900, sw, str(st["value"]), family="Syne", weight=700, size=48, color=C["hi"], lh=1.0, typo=False)
             ix = sx + vw + 20
             for ic in st.get("icons", []):
                 s.image(asset(ic, "icons"), ix, 912, 26, 26, fit="contain", name=f"Icon {ic}")
@@ -424,19 +506,19 @@ def layout_cover(spec, ctx, s: Slide):
 
 
 def layout_section(spec, ctx, s: Slide):
-    s.image(asset(spec.get("background", "wave-02"), "backgrounds"), 0, 0, W, H, scrim=spec.get("scrim", "left"))
+    room = backdrop(s, spec, "wave-02", bottom=CONTENT_BOTTOM)
     y = 400
     if spec.get("eyebrow"):
-        s.text(M, y - 56, 1200, spec["eyebrow"], family="Geist Mono", weight=500, size=24, color=C["lime"], caps=True, tracking=0.04, lh=1.2)
-    y += s.text(M, y, 1400, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", "")), size=112, lh=1.05, tracking=-0.03, max_h=360) + 32
+        s.text(M, y - 56, 1200, spec["eyebrow"], family="Geist Mono", weight=500, size=24, color=C["hi"], caps=True, tracking=0.04, lh=1.2)
+    y += s.text(M, y, min(1400, room), spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", "")), size=112, lh=1.05, tracking=-0.03, max_h=360) + 32
     if spec.get("subtitle"):
-        s.text(M, y, 1000, spec["subtitle"], size=36, color=C["text2"], lh=1.35)
+        s.text(M, y, min(1000, room), spec["subtitle"], size=36, color=C["text2"], lh=1.35)
     footer(s, ctx)
 
 
 def layout_statement(spec, ctx, s: Slide):
     if spec.get("eyebrow"):
-        s.text(M, 240, 1200, spec["eyebrow"], family="Geist Mono", weight=500, size=20, color=C["lime"], caps=True, tracking=0.04, lh=1.2)
+        s.text(M, 240, 1200, spec["eyebrow"], family="Geist Mono", weight=500, size=20, color=C["hi"], caps=True, tracking=0.04, lh=1.2)
     y = 300
     y += s.text(M, y, 1500, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", "")), size=96, lh=1.1, tracking=-0.03, max_h=440) + 48
     if spec.get("text"):
@@ -488,7 +570,7 @@ def layout_steps(spec, ctx, s: Slide):
         x, yy, w, h = box
         st = st if isinstance(st, dict) else {"title": st}
         s.rect(x, yy, w, h, C["card"], R_CARD)
-        s.text(x + 32, yy + 28, w - 64, f"{i:02d}", family="Geist Mono", weight=500, size=20, color=C["lime"], lh=1.2, typo=False)
+        s.text(x + 32, yy + 28, w - 64, f"{i:02d}", family="Geist Mono", weight=500, size=20, color=C["hi"], lh=1.2, typo=False)
         th = s.text(x + 32, yy + 68, w - 64, st["title"], weight=500, size=28, lh=1.3, max_h=h - 68 - 12)
         if st.get("text"):
             s.text(x + 32, yy + 68 + th + 12, w - 64, st["text"], size=22, color=C["muted"], lh=1.4, max_h=h - 92 - th)
@@ -509,11 +591,11 @@ def layout_steps(spec, ctx, s: Slide):
 
 
 def kpi_tile(s, x, y, w, h, t, dark_on_lime=True):
-    s.rect(x, y, w, h, C["bg"] if dark_on_lime else C["card"], R_ROW + 4)
+    s.rect(x, y, w, h, C["tile"] if dark_on_lime else C["card"], R_ROW + 4)
     s.text(x + 28, y + 28, w - 56, t.get("label", ""), family="Geist Mono", weight=500, size=16, color=C["muted"], caps=True, tracking=0.04, lh=1.2)
     vs = t.get("size") or (64 if h >= 180 else 44)
     vy = y + 28 + 19 + (24 if h >= 180 else 14)
-    vw = s.text(x + 28, vy, w - 56, str(t.get("value", "")), family="Syne", weight=700, size=vs, color=C["lime"], lh=1.0, typo=False)
+    vw = s.text(x + 28, vy, w - 56, str(t.get("value", "")), family="Syne", weight=700, size=vs, color=C["tile_value"] if dark_on_lime else C["hi"], lh=1.0, typo=False)
     ix = x + 28 + line_width(str(t.get("value", "")), "Syne", 700, vs) + 16
     for ic in t.get("icons", []):
         s.image(asset(ic, "icons"), ix, vy + vs * 0.3, vs * 0.42, vs * 0.42, fit="contain", flow=True)
@@ -559,7 +641,7 @@ def layout_kpi(spec, ctx, s: Slide):
         for i, (box, st) in enumerate(zip(grid(len(steps), len(steps), M + lw, sy, W - 2 * M - lw, 208), steps), 1):
             x, yy, w, h = box
             s.rect(x, yy, w, h, C["card"], R_CARD)
-            s.text(x + 28, yy + 28, w - 56, f"{i:02d}", family="Geist Mono", weight=500, size=18, color=C["lime"], lh=1.2, typo=False)
+            s.text(x + 28, yy + 28, w - 56, f"{i:02d}", family="Geist Mono", weight=500, size=18, color=C["hi"], lh=1.2, typo=False)
             s.text(x + 28, yy + h - 28 - s.measure(st, w - 56, weight=500, size=24, lh=1.3), w - 56, st, weight=500, size=24, lh=1.3)
     footer(s, ctx)
 
@@ -650,11 +732,11 @@ def layout_table(spec, ctx, s: Slide):
         if r_i % 2 == 0:
             s.rect(M, y, tw, rh, C["card"], R_ROW)
             if hl is not None:
-                s.rect(M + sum(ws[:hl]), y, ws[hl], rh, "#C4EE2A", 0)
+                s.rect(M + sum(ws[:hl]), y, ws[hl], rh, C["lime2"], 0)
         x = M
         for i, (val, w_) in enumerate(zip(row, ws)):
             s.text(x + 24, y + (rh - 24 * 1.3) / 2, w_ - 48, val, weight=600 if i == 0 else 400, size=24,
-                   color=C["ink"] if i == hl else (C["white"] if i == 0 else C["text2"]), lh=1.3, max_h=rh)
+                   color=C["ink"] if i == hl else (C["fg"] if i == 0 else C["text2"]), lh=1.3, max_h=rh)
             x += w_
         y += rh
     footer(s, ctx)
@@ -666,7 +748,7 @@ def layout_quotes(spec, ctx, s: Slide):
     for box, q in zip(grid(len(qs), len(qs), M, y, W - 2 * M, CONTENT_BOTTOM - y), qs):
         x, yy, w, h = box
         s.rect(x, yy, w, h, C["card"], R_CARD)
-        s.text(x + 40, yy + 24, 80, "“", family="Syne", weight=700, size=120, color=C["lime"], lh=1.0, typo=False)
+        s.text(x + 40, yy + 24, 80, "“", family="Syne", weight=700, size=120, color=C["hi"], lh=1.0, typo=False)
         qs_ = 36 if len(qs) <= 2 else 28
         s.text(x + 40, yy + 140, w - 80, q["text"], size=qs_, lh=1.4, max_h=h - 280)
         if q.get("logo"):
@@ -702,25 +784,19 @@ def layout_logos(spec, ctx, s: Slide):
 
 
 def layout_contacts(spec, ctx, s: Slide):
-    bg = asset(spec.get("background", "people-02-camera-blue"), "backgrounds")
-    with Image.open(bg) as im_:
-        wide = im_.width / im_.height > 1.5
-    if wide:
-        s.image(bg, 0, 0, W, H, scrim=spec.get("scrim", "left"), name="Background")
-    else:  # portrait/square photo: hold it on the right, fade into the dark canvas
-        s.image(bg, W - 1040, 0, 1040, H, scrim="fade-left", name="Photo")
+    room = backdrop(s, spec, "people-02-camera-blue")
     logo(s, M, 96, 280)
     y = 400
-    tw_ = 1300 if wide else 900
-    y += s.text(M, y, tw_, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", ""), 600, 700), size=128 if wide else 112, lh=1.05, tracking=-0.03, max_h=260) + 28
+    tw_ = min(1300, room)
+    y += s.text(M, y, tw_, spec.get("title", ""), family=ctx.head_family(spec.get("title", "")), weight=ctx.head_weight(spec.get("title", ""), 600, 700), size=128 if room > 1000 else 112, lh=1.05, tracking=-0.03, max_h=260) + 28
     if spec.get("subtitle"):
         y += s.text(M, y, tw_, spec["subtitle"], size=36, color=C["text2"], lh=1.35) + 48
     x = M
     for i, b in enumerate(spec.get("buttons", [])):
         primary = b.get("primary", i == 0)
         label = b["label"] + ("  ↗" if b.get("url") else "")
-        bw = s.pill(x, y, 72, label, fill=C["lime"] if primary else "#FFFFFF1F", color=C["ink"] if primary else C["white"],
-                    size=26, pad=36, stroke=None if primary else "#FFFFFF33", link=b.get("url"), typo=False, name="Button")
+        bw = s.pill(x, y, 72, label, fill=C["lime"] if primary else C["glass"], color=C["ink"] if primary else C["fg"],
+                    size=26, pad=36, stroke=None if primary else C["glass_stroke"], link=b.get("url"), typo=False, name="Button")
         x += bw + 20
 
 
@@ -828,6 +904,7 @@ def build(deck):
     ctx = Ctx(deck)
     slides = []
     for i, spec in enumerate(deck["slides"], 1):
+        use_theme(spec.get("theme") or deck.get("theme", "dark"))
         s = Slide(i, ctx.total)
         name = spec.get("layout")
         if name not in LAYOUTS:
@@ -839,6 +916,7 @@ def build(deck):
         if s.accents > 1:
             s.warnings.append(f"slide {i}: {s.accents} accent plates; Meadow slides carry at most one")
         slides.append(s)
+    use_theme("dark")
     return ctx, slides
 
 
@@ -860,7 +938,7 @@ def prep_image(p: Prim, tmpdir, scale=1.0):
     if sc:
         ov = Image.new("RGBA", (bw, bh), (0, 0, 0, 0))
         d = ImageDraw.Draw(ov)
-        base = (14, 16, 19)
+        base = p.props.get("scrim_rgb") or (14, 16, 19)
         if sc == "left":       # dark behind the copy on the left, image breathes on the right
             side, floor = Image.new("L", (bw, bh), 0), Image.new("L", (bw, bh), 0)
             ds, df = ImageDraw.Draw(side), ImageDraw.Draw(floor)

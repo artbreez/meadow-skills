@@ -21,6 +21,31 @@ All values are Figma px on a 1920×1080 frame. In PPTX 1px = 0.5pt (the script c
 | blue | #4E5BCF | secondary plate, only when someone asks for blue: lime is the default accent |
 | brand blue | #5282FF | product UI "interactive" colour; don't use it on slides |
 
+### Light theme (`"theme": "light"`)
+
+The investor-deck look: white canvas, ink type, blue as the accent *ink*. Lime type disappears
+on white, so everything that is lime text on dark (eyebrows, step numbers, bullets, standalone
+KPI values, the quote mark) turns blue #5260DA. Lime survives as fills only: the one plate,
+the cover chip, the primary button. Same layouts, same grid, same type.
+
+| token | dark | light | use |
+|---|---|---|---|
+| bg | #0E1013 | #FFFFFF | canvas |
+| card | #1A1D21 | #F2F3F5 | cards, blocks |
+| row | #23262B | #E6E8EC | rows inside a card |
+| fg | #FFFFFF | #0A0A0A | headings, primary text |
+| hi | #D3FF31 | #5260DA | accent as ink: eyebrows, numbers, bullets, KPI values |
+| text2 | #C9CDD3 | #3D3D3D | body copy |
+| muted | #9AA1AB | #6B7280 | captions, mono labels |
+| dim | #6B7280 | #9AA1AB | page counter |
+| tile | #0E1013 | #FFFFFF | KPI tiles on the lime plate (values lime / ink) |
+| blue plate | #4E5BCF | #5260DA | secondary plate, only on request |
+| logo, glyphs | lime / white | black | |
+
+Images on light slides sit in a rounded panel, never under a white scrim: a white fade over a
+dark wave or meadow just turns it grey. Mixing is fine: a dark slide (e.g. an appendix with a
+product screenshot) inside a light deck via the slide's own `"theme": "dark"`.
+
 Lime is for meaning, not decoration: one plate per slide at most, and none is fine. Lime text
 on dark is for eyebrows, step numbers, KPI values and bullets.
 

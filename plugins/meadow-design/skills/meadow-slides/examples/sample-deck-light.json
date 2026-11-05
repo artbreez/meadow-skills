@@ -1,0 +1,241 @@
+{
+ "title": "Meadow sample deck, light theme (fictional data)",
+ "theme": "light",
+ "slides": [
+  {
+   "layout": "cover",
+   "background": "wave-05",
+   "chip": "Sample · fictional numbers",
+   "title": "Creator campaign",
+   "subtitle": "How a brand gets a steady stream of short videos from real creators",
+   "stats": [
+    {
+     "value": "10,000+",
+     "label": "creators to choose from"
+    },
+    {
+     "value": "3",
+     "icons": [
+      "instagram",
+      "tiktok",
+      "youtube"
+     ],
+     "label": "platforms"
+    },
+    {
+     "value": "20",
+     "label": "videos per creator a month"
+    }
+   ],
+   "notes": "All numbers in this sample are fictional."
+  },
+  {
+   "layout": "text-cards",
+   "eyebrow": "The approach",
+   "title": "Lots of native video instead of one expensive ad",
+   "columns": [
+    "The brand gets a regular stream of short videos from different creators. They feel real and work for social, ads and the brand's own channels.",
+    "We match creators to the brand's audience and run production from brief to report."
+   ],
+   "cards": [
+    {
+     "title": "Why it works",
+     "rows": [
+      "Volume",
+      "Consistency",
+      "Variety of angles"
+     ],
+     "note": "Platform algorithms favour accounts that post often."
+    },
+    {
+     "title": "What we do",
+     "accent": "lime",
+     "bullets": [
+      "Pick creators based on data",
+      "Write creative frames instead of scripts",
+      "Test ideas and scale the winners",
+      "Report on every platform"
+     ]
+    }
+   ]
+  },
+  {
+   "layout": "steps",
+   "eyebrow": "Process",
+   "title": "How it works",
+   "steps": [
+    {
+     "title": "Brief",
+     "text": "goals, audience, limits"
+    },
+    {
+     "title": "Creator match",
+     "text": "by audience and topic"
+    },
+    {
+     "title": "Creative frames",
+     "text": "ideas and formats"
+    },
+    {
+     "title": "Shoot and publish",
+     "text": "on the content plan"
+    },
+    {
+     "title": "Report",
+     "text": "what worked, what's next"
+    }
+   ],
+   "callout": {
+    "value": "1",
+    "label": "video to approve",
+    "title": "You approve only each creator's first video",
+    "text": "After that creators shoot within the brief, which keeps it fast and native."
+   }
+  },
+  {
+   "layout": "kpi",
+   "eyebrow": "Sample package",
+   "title": "Getting started",
+   "tiles": [
+    {
+     "label": "Budget",
+     "value": "$5,000",
+     "caption": "per month"
+    },
+    {
+     "label": "CPM",
+     "value": "$4",
+     "caption": "per 1,000 views"
+    },
+    {
+     "label": "Views",
+     "value": "1,250,000",
+     "caption": "package reach"
+    },
+    {
+     "label": "Creators",
+     "value": "5"
+    },
+    {
+     "label": "Platforms",
+     "value": "3",
+     "icons": [
+      "instagram",
+      "tiktok",
+      "youtube"
+     ]
+    },
+    {
+     "label": "Unique videos",
+     "value": "100"
+    },
+    {
+     "label": "Posts",
+     "value": "300"
+    }
+   ],
+   "note_left": "Video rights as per contract",
+   "note_right": "Larger packages available",
+   "steps_title": "Ready to start?",
+   "steps_text": "Four steps to the first posts",
+   "steps": [
+    "Contract",
+    "Creator match",
+    "Shoot",
+    "Report"
+   ]
+  },
+  {
+   "layout": "case",
+   "eyebrow": "Case · fictional",
+   "title": "Views up three months running",
+   "blocks": [
+    {
+     "label": "Goal",
+     "text": "Keep the brand present in short video every week and find the formats worth scaling."
+    },
+    {
+     "facts": [
+      [
+       "Period",
+       "3 months"
+      ],
+      [
+       "Creators",
+       "5"
+      ],
+      [
+       "Content",
+       "20 videos per creator a month"
+      ],
+      [
+       "Budget",
+       "$5,000 per month"
+      ],
+      [
+       "Platforms",
+       "Instagram, TikTok, YouTube"
+      ]
+     ]
+    },
+    {
+     "label": "What we did",
+     "text": "Launched the stream, compared angles and moved budget to the best formats. Views grew every month."
+    }
+   ],
+   "result": {
+    "label": "Result in 3 months",
+    "value": "1.5",
+    "unit": "M",
+    "caption": "views",
+    "badge": "+50% vs month 1",
+    "bars": [
+     {
+      "label": "Month 1",
+      "value": 400,
+      "display": "400K"
+     },
+     {
+      "label": "Month 2",
+      "value": 500,
+      "display": "500K"
+     },
+     {
+      "label": "Month 3",
+      "value": 600,
+      "display": "600K"
+     }
+    ],
+    "tiles": [
+     {
+      "label": "CPM",
+      "value": "$10"
+     },
+     {
+      "label": "Videos",
+      "value": "300"
+     },
+     {
+      "label": "Posts",
+      "value": "900"
+     }
+    ]
+   }
+  },
+  {
+   "layout": "contacts",
+   "background": "people-02-camera-blue",
+   "title": "Ready to launch?",
+   "subtitle": "Write to us and we'll scope the task and pick the creators",
+   "buttons": [
+    {
+     "label": "Site · mymeadow.ai",
+     "url": "https://mymeadow.ai"
+    },
+    {
+     "label": "Brief"
+    }
+   ]
+  }
+ ]
+}

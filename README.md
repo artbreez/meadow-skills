@@ -11,6 +11,9 @@ Brand skills for Claude, shared across the team. They work in **Claude Code** an
 
 <img src="docs/preview.png" alt="Six slides from a deck the skill built" width="100%">
 
+Two themes: dark (default) and light, the white investor-deck look (`"theme": "light"`, or just
+ask for a light deck).
+
 Just ask in plain words, e.g. *"make a 6-slide client deck about our content factory"*,
 *"turn this brief into a Meadow deck"*, *"give me cover image prompts in the Meadow style"*.
 Russian works too.
@@ -50,7 +53,7 @@ plugins/meadow-design/                 plugin "meadow-design"
     references/                        layouts, design system, image prompts, Figma recipe
     scripts/                           deck engine (python-pptx), preview, Figma renderer
     assets/                            fonts, logo, platform glyphs, backgrounds
-    examples/                          sample deck spec
+    examples/                          sample deck specs (dark and light)
 package.sh                             builds the claude.ai zips
 ```
 

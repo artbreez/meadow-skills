@@ -1169,12 +1169,11 @@ def build(deck):
 # Each SVG keeps its geometry; colour comes from the theme. An SVG with a stroke is an outline
 # flower, otherwise a filled one.
 FLOWER_COLORS = {
-    # solid fills, and "glass": a see-through tint with a border in the same colour (the original
-    # asterisk was white 10% + white stroke over a background blur; PPTX has no backdrop blur)
-    "light": {"fill": ["#D3FF31", "#5260DA"], "glass": [("#5260DA1F", "#5260DA")]},
-    "dark": {"fill": ["#D3FF31", "#4E5BCF"], "glass": [("#FFFFFF1A", "#FFFFFF"), ("#D3FF311F", "#D3FF31")]},
+    # solid fills, and "line": a border only, fully transparent inside
+    "light": {"fill": ["#D3FF31", "#5260DA"], "line": ["#5260DA"]},
+    "dark": {"fill": ["#D3FF31", "#4E5BCF"], "line": ["#FFFFFF", "#D3FF31"]},
 }
-GLASS_SHARE = 0.5   # share of filled flowers drawn as glass; outline flowers are always glass
+LINE_SHARE = 0.5    # share of filled flowers drawn as a border only; outline flowers always are
 _flower_cache = {}
 
 
@@ -1225,8 +1224,8 @@ def flower_shapes():
     return _flower_cache
 
 
-def _place_flower(s: Slide, name, cx, cy, size, angle, color, glass=None):
-    """color = solid fill, or the border when `glass` (a translucent fill) is given."""
+def _place_flower(s: Slide, name, cx, cy, size, angle, color, line=False):
+    """color = solid fill, or the border when `line` (transparent inside)."""
     sh = flower_shapes()[name]
     k = size / sh["size"]
     ca, sa = math.cos(math.radians(angle)), math.sin(math.radians(angle))
@@ -1243,9 +1242,9 @@ def _place_flower(s: Slide, name, cx, cy, size, angle, color, glass=None):
             out.append((seg[0],) + tuple(v for pt in pts for v in pt))
         subs.append(out)
     if sh["outline"]:
-        s.path(subs, fill=glass, stroke=color, stroke_w=max(1.5, sh["stroke_w"] * k * 0.8), name=f"Flower {name}")
-    elif glass:
-        s.path(subs, fill=glass, stroke=color, stroke_w=max(1.5, size / 60), name=f"Flower {name}")
+        s.path(subs, stroke=color, stroke_w=max(1.5, sh["stroke_w"] * k * 0.8), name=f"Flower {name}")
+    elif line:
+        s.path(subs, stroke=color, stroke_w=max(1.5, size / 60), name=f"Flower {name}")
     else:
         s.path(subs, fill=color, name=f"Flower {name}")
 
@@ -1295,11 +1294,9 @@ def sprinkle_flowers(slides, deck):
             continue
         name = rng.choice(names)
         pal = FLOWER_COLORS[s.theme]
-        if flower_shapes()[name]["outline"] or rng.random() < GLASS_SHARE:
-            glass, color = rng.choice(pal["glass"])
-        else:
-            glass, color = None, rng.choice(pal["fill"])
-        _place_flower(s, name, cx, cy, size, rng.uniform(-30, 30), color, glass)
+        line = flower_shapes()[name]["outline"] or rng.random() < LINE_SHARE
+        color = rng.choice(pal["line" if line else "fill"])
+        _place_flower(s, name, cx, cy, size, rng.uniform(-30, 30), color, line)
         placed += 1
         last.add(s.index)
 

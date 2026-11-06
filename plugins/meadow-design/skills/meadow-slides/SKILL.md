@@ -74,7 +74,7 @@ mostly when you write copy or bend a layout.
   only as a fill. Use light for decks that will be printed or read rather than presented, or when the user
   asks for a white/light background. A single slide can override with its own `"theme"`.
   Light decks get a few brand **flowers** (vector asterisk / star / petals / blobs, solid or
-  glass: translucent tint + border) in clear
+  outline: a border, transparent inside) in clear
   space on about one slide in three; `"flowers": false` turns them off, `true` adds them to
   dark decks too. Don't place them by hand: the script finds room and keeps them sparse.
   Everything below is written for dark; the light theme swaps the same tokens (see

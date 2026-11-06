@@ -23,7 +23,7 @@
    "result":{"label":"Result in 3 months","value":"1.5","unit":"M","caption":"views","badge":"+50% vs month 1",
      "bars":[{"label":"Month 1","value":400,"display":"400K"},{"label":"Month 2","value":500,"display":"500K"},{"label":"Month 3","value":600,"display":"600K"}],
      "tiles":[{"label":"CPM","value":"$10"},{"label":"Videos","value":"300"},{"label":"Posts","value":"900"}]}},
-  {"layout":"contacts","background":"people-02-camera-blue","title":"Ready to launch?","subtitle":"Write to us and we'll scope the task and pick the creators",
+  {"layout":"contacts","background":"meadow-night-02","title":"Ready to launch?","subtitle":"Write to us and we'll scope the task and pick the creators",
    "buttons":[{"label":"Site · mymeadow.ai","url":"https://mymeadow.ai"},{"label":"Brief"}]}
  ]
 }

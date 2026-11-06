@@ -194,7 +194,7 @@ A big blue block with the claim: eyebrow, 2–4 short lines in large type, one o
 Closing slide: a photo held on the right and fading into the canvas (or a wide image
 full-bleed), logo, big title, subtitle, pill buttons with links. The first button is the lime one.
 ```json
-{"layout":"contacts","background":"people-02-camera-blue","title":"Ready to launch?",
+{"layout":"contacts","background":"meadow-night-02","title":"Ready to launch?",
  "subtitle":"Write to us and we'll scope the task","buttons":[{"label":"Site · mymeadow.ai","url":"https://mymeadow.ai"},
  {"label":"Brief"}]}
 ```

@@ -842,7 +842,7 @@ def layout_logos(spec, ctx, s: Slide):
 
 
 def layout_contacts(spec, ctx, s: Slide):
-    room = backdrop(s, spec, "people-02-camera-blue", light_default="light-flowers-01")
+    room = backdrop(s, spec, "meadow-night-02", light_default="light-flowers-01")
     logo(s, M, 96, 280)
     y = 400
     tw_ = min(1300, room)

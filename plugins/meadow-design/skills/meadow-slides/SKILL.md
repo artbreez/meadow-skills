@@ -73,10 +73,9 @@ mostly when you write copy or bend a layout.
   calm white look: white canvas, ink type, blue #5260DA eyebrows/numbers/KPI values, lime
   only as a fill. Use light for decks that will be printed or read rather than presented, or when the user
   asks for a white/light background. A single slide can override with its own `"theme"`.
-  Light decks get a few brand **flowers** (vector asterisk / star / petals / blobs, solid or
+  Both themes get a few brand **flowers** (vector asterisk / star / petals / blobs, solid or
   outline: a border, transparent inside) in clear
-  space on about one slide in three; `"flowers": false` turns them off, `true` adds them to
-  dark decks too. Don't place them by hand: the script finds room and keeps them sparse.
+  space on about one slide in three; `"flowers": false` turns them off. Don't place them by hand: the script finds room and keeps them sparse.
   Everything below is written for dark; the light theme swaps the same tokens (see
   `references/design-system.md`).
 - **Dark canvas, one accent plate.** Background #0E1013, cards #1A1D21, inner rows #23262B.

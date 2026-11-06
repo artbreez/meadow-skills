@@ -8,7 +8,7 @@ A deck is one JSON file:
   "lang": "en",                      // optional; auto: any Cyrillic -> ru
   "theme": "dark",                   // "dark" (default) or "light"; any slide can override it
   "footer": true,                    // logo + page counter on content slides
-  "flowers": true,                   // optional; default: on for light-theme slides only
+  "flowers": false,                  // optional; default: on (both themes), false turns them off
   "flowers_seed": 7,                 // optional; another number = another arrangement
   "slides": [ { "layout": "cover", ... }, ... ]
 }

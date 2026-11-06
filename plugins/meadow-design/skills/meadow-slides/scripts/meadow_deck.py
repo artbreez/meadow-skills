@@ -1265,14 +1265,14 @@ def _occupied(s: Slide, pad=40):
 def sprinkle_flowers(slides, deck):
     """A few flowers, not many: about one slide in three gets one, never two slides in a row,
     and only where it lands in clear space. Seeded from the deck, so rebuilds don't reshuffle.
-    Deck "flowers": true / false (default: on for light-theme slides only), "flowers_seed": n;
+    Deck "flowers": true / false (default: on, both themes), "flowers_seed": n;
     a slide's "flower": true / false forces it in or out."""
     mode = deck.get("flowers")
     if mode is False:
         return
     rng = random.Random(deck.get("flowers_seed", zlib.crc32(deck.get("title", "").encode())))
     names = sorted(flower_shapes())
-    want = lambda s: s.flower if s.flower is not None else (mode is True or s.theme == "light")
+    want = lambda s: s.flower if s.flower is not None else True
     pool = [s for s in slides if want(s)]
     forced = [s for s in pool if s.flower is True]
     budget = max(len(forced), round(len(pool) * 0.3))
